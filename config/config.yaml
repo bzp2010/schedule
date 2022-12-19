@@ -1,0 +1,13 @@
+server:
+  http_listen: ":9000"   # The HTTP  Server listen address, default is ":9000"
+                         # This value accepts only port ":9000" or ipv4/6 with port "127.0.0.1:9000"
+  https_listen: ":9001"  # The HTTPS Server listen address, default is ":9001".
+                         # TLS is only enabled on the server when the following TLS certificate is configured.
+  # tls:
+  #  cert_file: "/path/to/file/example.crt"
+  #  key_file: "/path/to/file/example.key"
+
+# dsn: "sqlite://data.db"
+
+log:
+  level: "warn"
