@@ -12,7 +12,9 @@ import (
 )
 
 const (
-	dsnPrefixSqlite = "sqlite://"
+	dsnPrefixSqlite     = "sqlite://"
+	dsnPrefixMySQL      = "mysql://"
+	dsnPrefixPostgreSQL = "postgres://"
 )
 
 var (
@@ -51,13 +53,14 @@ func SetupDatabase(cfg config.Config) error {
 		return errors.Wrap(err, "failed to open sqlite database")
 	}
 
-	if err := autoMigrate(database); err != nil {
-		return errors.Wrap(err, "failed to auto migrate database model")
-	}
-
 	return nil
 }
 
-func autoMigrate(db *gorm.DB) error {
-	return db.AutoMigrate(models.Task{})
+// Migrate perform a database migration
+func Migrate(db *gorm.DB) error {
+	err := db.AutoMigrate(models.Task{})
+	if err != nil {
+		return err
+	}
+	return nil
 }

@@ -20,12 +20,23 @@ func NewRootCommand() *cobra.Command {
 		RunE:  run,
 	}
 
+	cmd.AddCommand(newMigrateCommand())
+
 	cmd.PersistentFlags().StringVarP(&configFile, "config", "c", "config/config.yaml", "config file")
 
 	return cmd
 }
 
 func run(cmd *cobra.Command, args []string) error {
+	err := setup()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func setup() error {
 	// config
 	cfg := config.NewDefaultConfig()
 	if err := config.SetupConfig(&cfg, configFile); err != nil {
@@ -37,7 +48,7 @@ func run(cmd *cobra.Command, args []string) error {
 		return errors.Wrap(err, "failed to setup logger")
 	}
 
-	//database
+	// database
 	if err := database.SetupDatabase(cfg); err != nil {
 		return errors.Wrap(err, "failed to setup database")
 	}
