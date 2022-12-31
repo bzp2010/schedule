@@ -10,9 +10,6 @@ import (
 // TaskType is the type used to describe the type of task
 type TaskType uint8
 
-// TaskStatus indicates the current task status
-type TaskStatus uint64
-
 const (
 	// TaskTypeShell is a task for starting external process via shell
 	TaskTypeShell TaskType = iota
@@ -34,6 +31,9 @@ type Task struct {
 	// Configuration
 	Configuration datatypes.JSON
 
+	// Rules of task
+	Rules []TaskRule
+
 	// LastRunningAt indicates the last running time of the current task
 	LastRunningAt sql.NullTime
 
@@ -41,5 +41,5 @@ type Task struct {
 	LastRunningTime uint
 
 	// Status indicates the current task status
-	Status TaskStatus
+	Status Status
 }
