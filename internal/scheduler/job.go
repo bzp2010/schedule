@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/bzp2010/schedule/internal/database/models"
+	builtinTask "github.com/bzp2010/schedule/internal/scheduler/task"
 	"github.com/reugn/go-quartz/quartz"
 )
 
@@ -16,10 +17,10 @@ func generateJob(task models.Task, rule models.TaskRule) (quartz.Job, error) {
 		if err != nil {
 			return nil, err
 		}
-		job := newShellJob(cfg.Command, cfg.Timeout)
-		job.taskID = task.ID
-		job.taskRuleID = rule.ID
-		return job, nil
+		return builtinTask.NewShellJob(builtinTask.Task{
+			TaskID:     task.ID,
+			TaskRuleID: rule.ID,
+		}, cfg.Command, cfg.Timeout), nil
 	}
 	return nil, errors.New("unsupported task type")
 }

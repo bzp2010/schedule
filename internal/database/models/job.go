@@ -6,7 +6,8 @@ import (
 	"gorm.io/gorm"
 )
 
-type JobFlag uint8
+// JobFlag is a unique type of flag in Job, which is used as bitmask
+type JobFlag uint64
 
 const (
 	// JobFlagTimeout indicates that the task execution exceeds the time limit
@@ -44,4 +45,19 @@ type Job struct {
 
 	// Flags store multiple flag values to indicate Job status
 	Flags uint64
+}
+
+// AddFlag helps the caller to add flags to the Job record
+func (job *Job) AddFlag(flag JobFlag) {
+	job.Flags |= uint64(flag)
+}
+
+// HasFlag helps the caller to check the flags in the Job record
+func (job *Job) HasFlag(flag JobFlag) bool {
+	return job.Flags&uint64(flag) != 0
+}
+
+// RemoveFlag helps the caller to remove the flags from the Job record
+func (job *Job) RemoveFlag(flag JobFlag) {
+	job.Flags &= ^uint64(flag)
 }
