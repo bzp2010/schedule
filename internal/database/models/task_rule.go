@@ -20,6 +20,12 @@ type TaskRule struct {
 	// Rule of task
 	Rule string
 
+	// LastRunningAt indicates the last running time of the current task rule
+	LastRunningAt sql.NullTime
+
+	// LastRunningTime indicates the time consumed for the last run of the current task rule
+	LastRunningTime int64
+
 	// Status indicates the current task rule status
 	Status Status
 }

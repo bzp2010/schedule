@@ -58,7 +58,9 @@ func SetupDatabase(cfg config.Config) error {
 
 // Migrate perform a database migration
 func Migrate(db *gorm.DB) error {
-	err := db.AutoMigrate(models.Task{}, models.TaskRule{})
+	err := db.AutoMigrate(
+		models.Task{}, models.TaskRule{}, models.Job{},
+	)
 	if err != nil {
 		return err
 	}

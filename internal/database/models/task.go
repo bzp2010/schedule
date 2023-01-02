@@ -2,6 +2,7 @@ package models
 
 import (
 	"database/sql"
+	"time"
 
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
@@ -38,8 +39,14 @@ type Task struct {
 	LastRunningAt sql.NullTime
 
 	// LastRunningTime indicates the time consumed for the last run of the current task
-	LastRunningTime uint
+	LastRunningTime int64
 
 	// Status indicates the current task status
 	Status Status
+}
+
+// TaskConfigurationShell define the data structure of shell task configuration
+type TaskConfigurationShell struct {
+	Command string `json:"command"`
+	Timeout time.Duration
 }

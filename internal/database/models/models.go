@@ -1,6 +1,6 @@
 package models
 
-// Status indicates the current task status
+// Status indicates the current item status
 type Status uint8
 
 const (
