@@ -1,9 +1,12 @@
 package cmd
 
 import (
+	"sync"
+
 	"github.com/bzp2010/schedule/internal/config"
 	"github.com/bzp2010/schedule/internal/database"
 	"github.com/bzp2010/schedule/internal/log"
+	"github.com/bzp2010/schedule/internal/scheduler"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -32,6 +35,17 @@ func run(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+
+	// scheduler
+	err = scheduler.SetupScheduler()
+	if err != nil {
+		return errors.Wrap(err, "failed to setup scheduler")
+	}
+
+	// blocking here
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	wg.Wait()
 
 	return nil
 }
