@@ -9,13 +9,13 @@ import (
 )
 
 // TaskType is the type used to describe the type of task
-type TaskType uint8
+type TaskType string
 
 const (
 	// TaskTypeShell is a task for starting external process via shell
-	TaskTypeShell TaskType = iota
+	TaskTypeShell TaskType = "SHELL"
 	// TaskTypeWebhook is a task type that triggers an external webhook
-	TaskTypeWebhook
+	TaskTypeWebhook TaskType = "WEBHOOK"
 )
 
 // Task define the data structure of a timed task

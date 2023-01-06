@@ -34,7 +34,7 @@ func runMigrate(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	err := setup()
+	_, err := setup()
 	if err != nil {
 		return err
 	}

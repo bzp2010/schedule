@@ -7,6 +7,7 @@ import (
 	"github.com/bzp2010/schedule/internal/database"
 	"github.com/bzp2010/schedule/internal/log"
 	"github.com/bzp2010/schedule/internal/scheduler"
+	"github.com/bzp2010/schedule/internal/server"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -31,7 +32,7 @@ func NewRootCommand() *cobra.Command {
 }
 
 func run(cmd *cobra.Command, args []string) error {
-	err := setup()
+	cfg, err := setup()
 	if err != nil {
 		return err
 	}
@@ -42,6 +43,11 @@ func run(cmd *cobra.Command, args []string) error {
 		return errors.Wrap(err, "failed to setup scheduler")
 	}
 
+	// server
+	err = server.SetupServer(&server.Options{
+		Config: *cfg,
+	})
+
 	// blocking here
 	wg := sync.WaitGroup{}
 	wg.Add(1)
@@ -50,22 +56,22 @@ func run(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func setup() error {
+func setup() (*config.Config, error) {
 	// config
 	cfg := config.NewDefaultConfig()
 	if err := config.SetupConfig(&cfg, configFile); err != nil {
-		return errors.Wrap(err, "failed to setup config")
+		return nil, errors.Wrap(err, "failed to setup config")
 	}
 
 	// logger
 	if err := log.SetupLogger(cfg); err != nil {
-		return errors.Wrap(err, "failed to setup logger")
+		return &cfg, errors.Wrap(err, "failed to setup logger")
 	}
 
 	// database
 	if err := database.SetupDatabase(cfg); err != nil {
-		return errors.Wrap(err, "failed to setup database")
+		return &cfg, errors.Wrap(err, "failed to setup database")
 	}
 
-	return nil
+	return &cfg, nil
 }
