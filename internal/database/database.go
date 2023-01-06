@@ -41,7 +41,12 @@ func SetupDatabase(cfg config.Config) error {
 			return errors.Wrap(err, "failed to get absolute path to sqlite database file")
 		}
 
-		database, err = gorm.Open(sqlite.Open(path), &gorm.Config{})
+		database, err = gorm.Open(
+			sqlite.Open(path),
+			&gorm.Config{
+				Logger: newLogger(),
+			},
+		)
 	}
 
 	// no instance of any kind of database is created
