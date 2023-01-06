@@ -1,0 +1,49 @@
+enum TaskType {
+    """
+    The type of task that execute external shell commands and log the results
+    """
+    SHELL
+    """
+    The type of task that requests an external webhook and logs the results
+    """
+    WEBHOOK
+}
+
+type Task {
+    """
+    Task ID
+    """
+    id: ID
+    """
+    Task name
+    """
+    name: String
+    """
+    Task type (SHELL, WEBHOOK)
+    """
+    type: TaskType
+    """
+    Task configuration in JSON
+    """
+    configuration: String
+    """
+    Last execution moment of the task
+    """
+    last_running_at: Int64
+    """
+    Last execution time of the task
+    """
+    last_running_time: Int64
+    """
+    Create time of the task
+    """
+    created_at: Int64
+    """
+    Last update time of the task
+    """
+    updated_at: Int64
+    """
+    Status of the task
+    """
+    status: Status
+}

@@ -1,0 +1,11 @@
+scalar Int64
+
+enum Status {
+    ENABLED
+    DISABLED
+}
+
+type Query {
+    task(id: ID!): Task
+    tasks(limit: Int = 10, offset: Int = 0): [Task]
+}
