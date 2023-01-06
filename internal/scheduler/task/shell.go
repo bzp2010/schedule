@@ -35,7 +35,7 @@ func NewShellJob(task Task, command string, timeout time.Duration) *ShellJob {
 
 // Execute is called by a Scheduler when the Trigger associated with this job fires.
 func (sj *ShellJob) Execute() {
-	job := models.Job{TaskID: sj.TaskID, TaskRuleID: sj.TaskRuleID}
+	job := models.Job{TaskID: sj.TaskID, TaskRuleID: sj.TaskRuleID, StartAt: time.Now()}
 
 	ctx := context.Background()
 	if sj.Timeout > 0 {
@@ -70,6 +70,7 @@ func (sj *ShellJob) Execute() {
 
 	job.Stdout = outStr
 	job.Stderr = errStr
+	job.StopAt = time.Now()
 	sj.SaveJob(job)
 }
 
