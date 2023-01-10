@@ -1,7 +1,9 @@
 package server
 
 import (
+	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/bzp2010/schedule/internal/config"
+	"github.com/bzp2010/schedule/internal/handler/graphql"
 	"github.com/gin-gonic/gin"
 )
 
@@ -24,6 +26,16 @@ var (
 func SetupServer(options *Options) error {
 	// gin.SetMode(gin.ReleaseMode)
 	r := gin.New()
+
+	h := graphql.NewGraphQLHandler()
+	r.POST("/graphql", func(ctx *gin.Context) {
+		h.ServeHTTP(ctx.Writer, ctx.Request)
+	})
+	r.GET("/playground", func(ctx *gin.Context) {
+		playground.
+			Handler("GraphQL playground", "/graphql").
+			ServeHTTP(ctx.Writer, ctx.Request)
+	})
 
 	go r.Run(options.Config.Server.HTTPListen)
 	if options.Config.Server.TLS.CertFile != "" && options.Config.Server.TLS.KeyFile != "" {
