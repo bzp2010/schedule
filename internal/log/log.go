@@ -4,6 +4,8 @@ import (
 	"github.com/bzp2010/schedule/internal/config"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 var (
@@ -17,10 +19,34 @@ func GetLogger() *zap.SugaredLogger {
 
 // SetupLogger will create a single instance of logger based on the configuration
 func SetupLogger(config config.Config) error {
-	zapLog, err := zap.NewProduction()
-	if err != nil {
-		return errors.Wrap(err, "failed to new zap logger")
+	var (
+		logPath = config.Log.Path
+		level   zap.AtomicLevel
+		err     error
+	)
+
+	// convert log level to zap format
+	if level, err = zap.ParseAtomicLevel(config.Log.Level); err != nil {
+		return errors.Wrap(err, "failed to parse log level")
 	}
+
+	encConfig := zap.NewProductionEncoderConfig()
+	core := zapcore.NewCore(
+		zapcore.NewJSONEncoder(encConfig),
+		zapcore.AddSync(&lumberjack.Logger{
+			Filename:   logPath,
+			MaxSize:    10, // maximum size of a single log file (Mbytes)
+			MaxBackups: 10, // maximum number of logs to be saved
+			MaxAge:     30, // maximum number of days to keep logs
+			Compress:   false,
+		}),
+		zap.LevelEnablerFunc(func(l zapcore.Level) bool {
+			return level.Enabled(l)
+		}),
+	)
+
+	// build logger
+	zapLog := zap.New(core, zap.AddCaller(), zap.AddStacktrace(zap.ErrorLevel))
 	defer zapLog.Sync()
 
 	logger = zapLog.Sugar()

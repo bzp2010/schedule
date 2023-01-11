@@ -17,6 +17,10 @@ func NewDefaultConfig() Config {
 			TLS:         ServerTLS{},
 		},
 		DSN: "sqlite://data.db",
+		Log: Log{
+			Level: "warn",
+			Path:  "logs/error.log",
+		},
 	}
 }
 

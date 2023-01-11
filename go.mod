@@ -13,9 +13,10 @@ require (
 	github.com/stretchr/testify v1.8.1
 	github.com/vektah/gqlparser/v2 v2.5.1
 	go.uber.org/zap v1.24.0
+	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gorm.io/datatypes v1.1.0
-	gorm.io/driver/sqlite v1.4.3
-	gorm.io/gorm v1.24.2
+	gorm.io/driver/sqlite v1.4.4
+	gorm.io/gorm v1.24.3
 	moul.io/zapgorm2 v1.2.0
 )
 
