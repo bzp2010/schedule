@@ -63,3 +63,9 @@ models:
     fields:
       type:
         resolver: true
+      rules:
+        resolver: true
+  TaskRule:
+    fields:
+      task:
+        resolver: true

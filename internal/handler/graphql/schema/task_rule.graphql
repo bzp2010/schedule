@@ -1,35 +1,24 @@
-enum TaskType {
+type TaskRule {
     """
-    The type of task that execute external shell commands and log the results
-    """
-    SHELL
-    """
-    The type of task that requests an external webhook and logs the results
-    """
-    WEBHOOK
-}
-
-type Task {
-    """
-    Task ID
+    Task rule ID
     """
     id: ID
     """
-    Task name
+    Task ID associated with the rule
     """
-    name: String
+    task_id: ID
     """
-    Task type (SHELL, WEBHOOK)
+    Task associated with the rule
     """
-    type: TaskType
+    task: Task
     """
-    Task configuration in JSON
+    Task rule description
     """
-    configuration: String
+    description: String
     """
-    Rules of the task
+    Task rule definition (in quartz format)
     """
-    rules: [TaskRule]
+    rule: String
     """
     Last execution moment of the task
     """

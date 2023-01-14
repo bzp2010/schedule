@@ -14,6 +14,9 @@ type TaskRule struct {
 	// TaskID indicates the task ID associated with the rule
 	TaskID uint
 
+	// Task indicates the task associated with the Job
+	Task Task
+
 	// Description of task rule
 	Description sql.NullString
 

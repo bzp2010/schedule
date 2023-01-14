@@ -15,7 +15,7 @@ import (
 
 // Task is the resolver for the task field.
 func (r *queryResolver) Task(ctx context.Context, id int64) (*models.Task, error) {
-	task := models.Task{}
+	var task models.Task
 	result := database.GetDatabase().Where("id = ?", id).Find(&task)
 	if err := result.Error; err != nil {
 		return nil, err
@@ -28,12 +28,12 @@ func (r *queryResolver) Task(ctx context.Context, id int64) (*models.Task, error
 
 // Tasks is the resolver for the tasks field.
 func (r *queryResolver) Tasks(ctx context.Context, limit *int, offset *int) ([]*models.Task, error) {
-	var task []*models.Task
-	result := database.GetDatabase().Offset(*offset).Limit(*limit).Find(&task)
+	var tasks []*models.Task
+	result := database.GetDatabase().Offset(*offset).Limit(*limit).Find(&tasks)
 	if err := result.Error; err != nil {
 		return nil, err
 	}
-	return task, nil
+	return tasks, nil
 }
 
 // Query returns generated.QueryResolver implementation.

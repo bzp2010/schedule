@@ -37,6 +37,7 @@ type Config struct {
 type ResolverRoot interface {
 	Query() QueryResolver
 	Task() TaskResolver
+	TaskRule() TaskRuleResolver
 }
 
 type DirectiveRoot struct {
@@ -55,8 +56,22 @@ type ComplexityRoot struct {
 		LastRunningAt   func(childComplexity int) int
 		LastRunningTime func(childComplexity int) int
 		Name            func(childComplexity int) int
+		Rules           func(childComplexity int) int
 		Status          func(childComplexity int) int
 		Type            func(childComplexity int) int
+		UpdatedAt       func(childComplexity int) int
+	}
+
+	TaskRule struct {
+		CreatedAt       func(childComplexity int) int
+		Description     func(childComplexity int) int
+		ID              func(childComplexity int) int
+		LastRunningAt   func(childComplexity int) int
+		LastRunningTime func(childComplexity int) int
+		Rule            func(childComplexity int) int
+		Status          func(childComplexity int) int
+		Task            func(childComplexity int) int
+		TaskID          func(childComplexity int) int
 		UpdatedAt       func(childComplexity int) int
 	}
 }
@@ -70,10 +85,22 @@ type TaskResolver interface {
 
 	Type(ctx context.Context, obj *models.Task) (*models.TaskType, error)
 	Configuration(ctx context.Context, obj *models.Task) (*string, error)
+	Rules(ctx context.Context, obj *models.Task) ([]*models.TaskRule, error)
 	LastRunningAt(ctx context.Context, obj *models.Task) (*int64, error)
 
 	CreatedAt(ctx context.Context, obj *models.Task) (*int64, error)
 	UpdatedAt(ctx context.Context, obj *models.Task) (*int64, error)
+}
+type TaskRuleResolver interface {
+	ID(ctx context.Context, obj *models.TaskRule) (*int64, error)
+	TaskID(ctx context.Context, obj *models.TaskRule) (*int64, error)
+	Task(ctx context.Context, obj *models.TaskRule) (*models.Task, error)
+	Description(ctx context.Context, obj *models.TaskRule) (*string, error)
+
+	LastRunningAt(ctx context.Context, obj *models.TaskRule) (*int64, error)
+
+	CreatedAt(ctx context.Context, obj *models.TaskRule) (*int64, error)
+	UpdatedAt(ctx context.Context, obj *models.TaskRule) (*int64, error)
 }
 
 type executableSchema struct {
@@ -157,6 +184,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Task.Name(childComplexity), true
 
+	case "Task.rules":
+		if e.complexity.Task.Rules == nil {
+			break
+		}
+
+		return e.complexity.Task.Rules(childComplexity), true
+
 	case "Task.status":
 		if e.complexity.Task.Status == nil {
 			break
@@ -177,6 +211,76 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Task.UpdatedAt(childComplexity), true
+
+	case "TaskRule.created_at":
+		if e.complexity.TaskRule.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.TaskRule.CreatedAt(childComplexity), true
+
+	case "TaskRule.description":
+		if e.complexity.TaskRule.Description == nil {
+			break
+		}
+
+		return e.complexity.TaskRule.Description(childComplexity), true
+
+	case "TaskRule.id":
+		if e.complexity.TaskRule.ID == nil {
+			break
+		}
+
+		return e.complexity.TaskRule.ID(childComplexity), true
+
+	case "TaskRule.last_running_at":
+		if e.complexity.TaskRule.LastRunningAt == nil {
+			break
+		}
+
+		return e.complexity.TaskRule.LastRunningAt(childComplexity), true
+
+	case "TaskRule.last_running_time":
+		if e.complexity.TaskRule.LastRunningTime == nil {
+			break
+		}
+
+		return e.complexity.TaskRule.LastRunningTime(childComplexity), true
+
+	case "TaskRule.rule":
+		if e.complexity.TaskRule.Rule == nil {
+			break
+		}
+
+		return e.complexity.TaskRule.Rule(childComplexity), true
+
+	case "TaskRule.status":
+		if e.complexity.TaskRule.Status == nil {
+			break
+		}
+
+		return e.complexity.TaskRule.Status(childComplexity), true
+
+	case "TaskRule.task":
+		if e.complexity.TaskRule.Task == nil {
+			break
+		}
+
+		return e.complexity.TaskRule.Task(childComplexity), true
+
+	case "TaskRule.task_id":
+		if e.complexity.TaskRule.TaskID == nil {
+			break
+		}
+
+		return e.complexity.TaskRule.TaskID(childComplexity), true
+
+	case "TaskRule.updated_at":
+		if e.complexity.TaskRule.UpdatedAt == nil {
+			break
+		}
+
+		return e.complexity.TaskRule.UpdatedAt(childComplexity), true
 
 	}
 	return 0, false
@@ -270,6 +374,53 @@ type Task {
     Task configuration in JSON
     """
     configuration: String
+    """
+    Rules of the task
+    """
+    rules: [TaskRule]
+    """
+    Last execution moment of the task
+    """
+    last_running_at: Int64
+    """
+    Last execution time of the task
+    """
+    last_running_time: Int64
+    """
+    Create time of the task
+    """
+    created_at: Int64
+    """
+    Last update time of the task
+    """
+    updated_at: Int64
+    """
+    Status of the task
+    """
+    status: Status
+}
+`, BuiltIn: false},
+	{Name: "../schema/task_rule.graphql", Input: `type TaskRule {
+    """
+    Task rule ID
+    """
+    id: ID
+    """
+    Task ID associated with the rule
+    """
+    task_id: ID
+    """
+    Task associated with the rule
+    """
+    task: Task
+    """
+    Task rule description
+    """
+    description: String
+    """
+    Task rule definition (in quartz format)
+    """
+    rule: String
     """
     Last execution moment of the task
     """
@@ -435,6 +586,8 @@ func (ec *executionContext) fieldContext_Query_task(ctx context.Context, field g
 				return ec.fieldContext_Task_type(ctx, field)
 			case "configuration":
 				return ec.fieldContext_Task_configuration(ctx, field)
+			case "rules":
+				return ec.fieldContext_Task_rules(ctx, field)
 			case "last_running_at":
 				return ec.fieldContext_Task_last_running_at(ctx, field)
 			case "last_running_time":
@@ -507,6 +660,8 @@ func (ec *executionContext) fieldContext_Query_tasks(ctx context.Context, field 
 				return ec.fieldContext_Task_type(ctx, field)
 			case "configuration":
 				return ec.fieldContext_Task_configuration(ctx, field)
+			case "rules":
+				return ec.fieldContext_Task_rules(ctx, field)
 			case "last_running_at":
 				return ec.fieldContext_Task_last_running_at(ctx, field)
 			case "last_running_time":
@@ -828,6 +983,69 @@ func (ec *executionContext) fieldContext_Task_configuration(ctx context.Context,
 	return fc, nil
 }
 
+func (ec *executionContext) _Task_rules(ctx context.Context, field graphql.CollectedField, obj *models.Task) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Task_rules(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Task().Rules(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*models.TaskRule)
+	fc.Result = res
+	return ec.marshalOTaskRule2ᚕᚖgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTaskRule(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Task_rules(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Task",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_TaskRule_id(ctx, field)
+			case "task_id":
+				return ec.fieldContext_TaskRule_task_id(ctx, field)
+			case "task":
+				return ec.fieldContext_TaskRule_task(ctx, field)
+			case "description":
+				return ec.fieldContext_TaskRule_description(ctx, field)
+			case "rule":
+				return ec.fieldContext_TaskRule_rule(ctx, field)
+			case "last_running_at":
+				return ec.fieldContext_TaskRule_last_running_at(ctx, field)
+			case "last_running_time":
+				return ec.fieldContext_TaskRule_last_running_time(ctx, field)
+			case "created_at":
+				return ec.fieldContext_TaskRule_created_at(ctx, field)
+			case "updated_at":
+				return ec.fieldContext_TaskRule_updated_at(ctx, field)
+			case "status":
+				return ec.fieldContext_TaskRule_status(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TaskRule", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Task_last_running_at(ctx context.Context, field graphql.CollectedField, obj *models.Task) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Task_last_running_at(ctx, field)
 	if err != nil {
@@ -1023,6 +1241,438 @@ func (ec *executionContext) _Task_status(ctx context.Context, field graphql.Coll
 func (ec *executionContext) fieldContext_Task_status(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Task",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Status does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TaskRule_id(ctx context.Context, field graphql.CollectedField, obj *models.TaskRule) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TaskRule_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.TaskRule().ID(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int64)
+	fc.Result = res
+	return ec.marshalOID2ᚖint64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TaskRule_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TaskRule",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TaskRule_task_id(ctx context.Context, field graphql.CollectedField, obj *models.TaskRule) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TaskRule_task_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.TaskRule().TaskID(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int64)
+	fc.Result = res
+	return ec.marshalOID2ᚖint64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TaskRule_task_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TaskRule",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TaskRule_task(ctx context.Context, field graphql.CollectedField, obj *models.TaskRule) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TaskRule_task(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.TaskRule().Task(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*models.Task)
+	fc.Result = res
+	return ec.marshalOTask2ᚖgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTask(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TaskRule_task(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TaskRule",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Task_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Task_name(ctx, field)
+			case "type":
+				return ec.fieldContext_Task_type(ctx, field)
+			case "configuration":
+				return ec.fieldContext_Task_configuration(ctx, field)
+			case "rules":
+				return ec.fieldContext_Task_rules(ctx, field)
+			case "last_running_at":
+				return ec.fieldContext_Task_last_running_at(ctx, field)
+			case "last_running_time":
+				return ec.fieldContext_Task_last_running_time(ctx, field)
+			case "created_at":
+				return ec.fieldContext_Task_created_at(ctx, field)
+			case "updated_at":
+				return ec.fieldContext_Task_updated_at(ctx, field)
+			case "status":
+				return ec.fieldContext_Task_status(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Task", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TaskRule_description(ctx context.Context, field graphql.CollectedField, obj *models.TaskRule) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TaskRule_description(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.TaskRule().Description(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TaskRule_description(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TaskRule",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TaskRule_rule(ctx context.Context, field graphql.CollectedField, obj *models.TaskRule) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TaskRule_rule(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Rule, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalOString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TaskRule_rule(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TaskRule",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TaskRule_last_running_at(ctx context.Context, field graphql.CollectedField, obj *models.TaskRule) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TaskRule_last_running_at(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.TaskRule().LastRunningAt(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int64)
+	fc.Result = res
+	return ec.marshalOInt642ᚖint64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TaskRule_last_running_at(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TaskRule",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TaskRule_last_running_time(ctx context.Context, field graphql.CollectedField, obj *models.TaskRule) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TaskRule_last_running_time(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.LastRunningTime, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalOInt642int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TaskRule_last_running_time(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TaskRule",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TaskRule_created_at(ctx context.Context, field graphql.CollectedField, obj *models.TaskRule) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TaskRule_created_at(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.TaskRule().CreatedAt(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int64)
+	fc.Result = res
+	return ec.marshalOInt642ᚖint64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TaskRule_created_at(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TaskRule",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TaskRule_updated_at(ctx context.Context, field graphql.CollectedField, obj *models.TaskRule) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TaskRule_updated_at(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.TaskRule().UpdatedAt(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int64)
+	fc.Result = res
+	return ec.marshalOInt642ᚖint64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TaskRule_updated_at(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TaskRule",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TaskRule_status(ctx context.Context, field graphql.CollectedField, obj *models.TaskRule) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TaskRule_status(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Status, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(models.Status)
+	fc.Result = res
+	return ec.marshalOStatus2githubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐStatus(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TaskRule_status(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TaskRule",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -2961,6 +3611,23 @@ func (ec *executionContext) _Task(ctx context.Context, sel ast.SelectionSet, obj
 				return innerFunc(ctx)
 
 			})
+		case "rules":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Task_rules(ctx, field, obj)
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
 		case "last_running_at":
 			field := field
 
@@ -3019,6 +3686,158 @@ func (ec *executionContext) _Task(ctx context.Context, sel ast.SelectionSet, obj
 		case "status":
 
 			out.Values[i] = ec._Task_status(ctx, field, obj)
+
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var taskRuleImplementors = []string{"TaskRule"}
+
+func (ec *executionContext) _TaskRule(ctx context.Context, sel ast.SelectionSet, obj *models.TaskRule) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, taskRuleImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("TaskRule")
+		case "id":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._TaskRule_id(ctx, field, obj)
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		case "task_id":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._TaskRule_task_id(ctx, field, obj)
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		case "task":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._TaskRule_task(ctx, field, obj)
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		case "description":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._TaskRule_description(ctx, field, obj)
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		case "rule":
+
+			out.Values[i] = ec._TaskRule_rule(ctx, field, obj)
+
+		case "last_running_at":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._TaskRule_last_running_at(ctx, field, obj)
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		case "last_running_time":
+
+			out.Values[i] = ec._TaskRule_last_running_time(ctx, field, obj)
+
+		case "created_at":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._TaskRule_created_at(ctx, field, obj)
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		case "updated_at":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._TaskRule_updated_at(ctx, field, obj)
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		case "status":
+
+			out.Values[i] = ec._TaskRule_status(ctx, field, obj)
 
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
@@ -3813,6 +4632,54 @@ func (ec *executionContext) marshalOTask2ᚖgithubᚗcomᚋbzp2010ᚋscheduleᚋ
 		return graphql.Null
 	}
 	return ec._Task(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOTaskRule2ᚕᚖgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTaskRule(ctx context.Context, sel ast.SelectionSet, v []*models.TaskRule) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOTaskRule2ᚖgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTaskRule(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	return ret
+}
+
+func (ec *executionContext) marshalOTaskRule2ᚖgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTaskRule(ctx context.Context, sel ast.SelectionSet, v *models.TaskRule) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._TaskRule(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOTaskType2ᚖgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTaskType(ctx context.Context, v interface{}) (*models.TaskType, error) {

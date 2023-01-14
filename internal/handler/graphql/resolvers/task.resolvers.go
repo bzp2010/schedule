@@ -7,6 +7,7 @@ package resolvers
 import (
 	"context"
 
+	"github.com/bzp2010/schedule/internal/database"
 	"github.com/bzp2010/schedule/internal/database/models"
 	"github.com/bzp2010/schedule/internal/handler/graphql/generated"
 	"github.com/icza/gog"
@@ -25,6 +26,16 @@ func (r *taskResolver) Type(ctx context.Context, obj *models.Task) (*models.Task
 // Configuration is the resolver for the configuration field.
 func (r *taskResolver) Configuration(ctx context.Context, obj *models.Task) (*string, error) {
 	return gog.Ptr(obj.Configuration.String()), nil
+}
+
+// Rules is the resolver for the rules field.
+func (r *taskResolver) Rules(ctx context.Context, obj *models.Task) ([]*models.TaskRule, error) {
+	var taskRules []*models.TaskRule
+	err := database.GetDatabase().Model(obj).Association("Rules").Find(&taskRules)
+	if err != nil {
+		return nil, err
+	}
+	return taskRules, nil
 }
 
 // LastRunningAt is the resolver for the last_running_at field.

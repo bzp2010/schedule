@@ -6,6 +6,14 @@ import (
 	"github.com/bzp2010/schedule/internal/handler/graphql/resolvers"
 )
 
+// NewGraphQLHandler generates a handler for GraphQL requests
 func NewGraphQLHandler() *handler.Server {
-	return handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: &resolvers.Resolver{}}))
+	server := handler.NewDefaultServer(
+		generated.NewExecutableSchema(
+			generated.Config{
+				Resolvers: &resolvers.Resolver{},
+			},
+		),
+	)
+	return server
 }
