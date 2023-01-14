@@ -9,6 +9,7 @@ import (
 
 	"github.com/bzp2010/schedule/internal/database"
 	"github.com/bzp2010/schedule/internal/database/models"
+	"github.com/bzp2010/schedule/internal/handler/graphql/consts"
 	"github.com/bzp2010/schedule/internal/handler/graphql/generated"
 	"github.com/icza/gog"
 )
@@ -29,10 +30,18 @@ func (r *taskResolver) Configuration(ctx context.Context, obj *models.Task) (*st
 }
 
 // Rules is the resolver for the rules field.
-func (r *taskResolver) Rules(ctx context.Context, obj *models.Task) ([]*models.TaskRule, error) {
+func (r *taskResolver) Rules(ctx context.Context, obj *models.Task, limit *int, offset *int) ([]*models.TaskRule, error) {
+	if *limit <= 0 {
+		return nil, consts.ErrLimitEmpty
+	}
+
 	var taskRules []*models.TaskRule
-	err := database.GetDatabase().Model(obj).Association("Rules").Find(&taskRules)
-	if err != nil {
+	result := database.GetDatabase().
+		Where("task_id = ?", obj.ID).
+		Limit(*limit).
+		Offset(*offset).
+		Find(&taskRules)
+	if err := result.Error; err != nil {
 		return nil, err
 	}
 	return taskRules, nil

@@ -29,7 +29,7 @@ type Task {
     """
     Rules of the task
     """
-    rules: [TaskRule]
+    rules(limit: Int = 10, offset: Int = 0): [TaskRule]
     """
     Last execution moment of the task
     """

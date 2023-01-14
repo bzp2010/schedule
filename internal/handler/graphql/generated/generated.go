@@ -56,7 +56,7 @@ type ComplexityRoot struct {
 		LastRunningAt   func(childComplexity int) int
 		LastRunningTime func(childComplexity int) int
 		Name            func(childComplexity int) int
-		Rules           func(childComplexity int) int
+		Rules           func(childComplexity int, limit *int, offset *int) int
 		Status          func(childComplexity int) int
 		Type            func(childComplexity int) int
 		UpdatedAt       func(childComplexity int) int
@@ -85,7 +85,7 @@ type TaskResolver interface {
 
 	Type(ctx context.Context, obj *models.Task) (*models.TaskType, error)
 	Configuration(ctx context.Context, obj *models.Task) (*string, error)
-	Rules(ctx context.Context, obj *models.Task) ([]*models.TaskRule, error)
+	Rules(ctx context.Context, obj *models.Task, limit *int, offset *int) ([]*models.TaskRule, error)
 	LastRunningAt(ctx context.Context, obj *models.Task) (*int64, error)
 
 	CreatedAt(ctx context.Context, obj *models.Task) (*int64, error)
@@ -189,7 +189,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		return e.complexity.Task.Rules(childComplexity), true
+		args, err := ec.field_Task_rules_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Task.Rules(childComplexity, args["limit"].(*int), args["offset"].(*int)), true
 
 	case "Task.status":
 		if e.complexity.Task.Status == nil {
@@ -377,7 +382,7 @@ type Task {
     """
     Rules of the task
     """
-    rules: [TaskRule]
+    rules(limit: Int = 10, offset: Int = 0): [TaskRule]
     """
     Last execution moment of the task
     """
@@ -481,6 +486,30 @@ func (ec *executionContext) field_Query_task_args(ctx context.Context, rawArgs m
 }
 
 func (ec *executionContext) field_Query_tasks_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *int
+	if tmp, ok := rawArgs["limit"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("limit"))
+		arg0, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["limit"] = arg0
+	var arg1 *int
+	if tmp, ok := rawArgs["offset"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("offset"))
+		arg1, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["offset"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Task_rules_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 *int
@@ -997,7 +1026,7 @@ func (ec *executionContext) _Task_rules(ctx context.Context, field graphql.Colle
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Task().Rules(rctx, obj)
+		return ec.resolvers.Task().Rules(rctx, obj, fc.Args["limit"].(*int), fc.Args["offset"].(*int))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1042,6 +1071,17 @@ func (ec *executionContext) fieldContext_Task_rules(ctx context.Context, field g
 			}
 			return nil, fmt.Errorf("no field named %q was found under type TaskRule", field.Name)
 		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Task_rules_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
 	}
 	return fc, nil
 }
