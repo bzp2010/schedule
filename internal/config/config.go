@@ -11,6 +11,7 @@ import (
 // the same values as the default configuration in config.yaml
 func NewDefaultConfig() Config {
 	return Config{
+		Debug: false,
 		Server: Server{
 			HTTPListen:  ":9000",
 			HTTPSListen: ":9001",

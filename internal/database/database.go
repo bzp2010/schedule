@@ -44,7 +44,7 @@ func SetupDatabase(cfg config.Config) error {
 		database, err = gorm.Open(
 			sqlite.Open(path),
 			&gorm.Config{
-				Logger: newLogger(),
+				Logger: newLogger(cfg),
 			},
 		)
 	}

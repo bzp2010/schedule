@@ -1,6 +1,8 @@
 package log
 
 import (
+	"os"
+
 	"github.com/bzp2010/schedule/internal/config"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -31,7 +33,7 @@ func SetupLogger(config config.Config) error {
 	}
 
 	encConfig := zap.NewProductionEncoderConfig()
-	core := zapcore.NewCore(
+	coreFile := zapcore.NewCore(
 		zapcore.NewJSONEncoder(encConfig),
 		zapcore.AddSync(&lumberjack.Logger{
 			Filename:   logPath,
@@ -44,6 +46,21 @@ func SetupLogger(config config.Config) error {
 			return level.Enabled(l)
 		}),
 	)
+
+	var core zapcore.Core
+	if config.Debug {
+		// print logs to stdout when debug mode is on
+		coreConsole := zapcore.NewCore(
+			zapcore.NewConsoleEncoder(encConfig),
+			zapcore.AddSync(os.Stdout),
+			zap.LevelEnablerFunc(func(l zapcore.Level) bool {
+				return level.Enabled(l)
+			}),
+		)
+		core = zapcore.NewTee(coreFile, coreConsole)
+	} else {
+		core = zapcore.NewTee(coreFile)
+	}
 
 	// build logger
 	zapLog := zap.New(core, zap.AddCaller(), zap.AddStacktrace(zap.ErrorLevel))

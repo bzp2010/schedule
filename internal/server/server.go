@@ -1,9 +1,13 @@
 package server
 
 import (
+	"time"
+
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/bzp2010/schedule/internal/config"
 	"github.com/bzp2010/schedule/internal/handler/graphql"
+	"github.com/bzp2010/schedule/internal/log"
+	ginzap "github.com/gin-contrib/zap"
 	"github.com/gin-gonic/gin"
 )
 
@@ -24,8 +28,19 @@ var (
 
 // SetupServer creates server instances
 func SetupServer(options *Options) error {
-	// gin.SetMode(gin.ReleaseMode)
+	if !options.Config.Debug {
+		// when debug mode is off, set GIN to release mode
+		gin.SetMode(gin.ReleaseMode)
+	}
+
 	r := gin.New()
+
+	logger := log.GetLogger().Desugar()
+	if options.Config.Debug {
+		// when debug mode is on, all HTTP requests will be logged
+		r.Use(ginzap.Ginzap(logger, time.RFC3339, true))
+	}
+	r.Use(ginzap.RecoveryWithZap(logger, true))
 
 	h := graphql.NewGraphQLHandler()
 	r.POST("/graphql", func(ctx *gin.Context) {

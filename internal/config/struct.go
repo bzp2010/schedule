@@ -2,6 +2,7 @@ package config
 
 // Config is the entrypoint for all configuration items
 type Config struct {
+	Debug  bool   `mapstructure:"debug"`
 	Server Server `mapstructure:"server"`
 	DSN    string `mapstructure:"dsn"`
 	Log    Log    `mapstructure:"log"`
