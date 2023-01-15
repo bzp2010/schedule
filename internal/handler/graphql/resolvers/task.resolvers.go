@@ -6,11 +6,14 @@ package resolvers
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 
 	"github.com/bzp2010/schedule/internal/database"
 	"github.com/bzp2010/schedule/internal/database/models"
 	"github.com/bzp2010/schedule/internal/handler/graphql/consts"
 	"github.com/bzp2010/schedule/internal/handler/graphql/generated"
+	models1 "github.com/bzp2010/schedule/internal/handler/graphql/models"
 	"github.com/icza/gog"
 )
 
@@ -25,8 +28,26 @@ func (r *taskResolver) Type(ctx context.Context, obj *models.Task) (models.TaskT
 }
 
 // Configuration is the resolver for the configuration field.
-func (r *taskResolver) Configuration(ctx context.Context, obj *models.Task) (string, error) {
-	return obj.Configuration.String(), nil
+func (r *taskResolver) Configuration(ctx context.Context, obj *models.Task) (models1.TaskConfiguration, error) {
+	var err error
+	switch obj.Type {
+	case models.TaskTypeShell:
+		cfg := models.TaskConfigurationShell{}
+		err = json.Unmarshal([]byte(obj.Configuration.String()), &cfg)
+		if err == nil {
+			return cfg, err
+		}
+	case models.TaskTypeWebhook:
+		cfg := models.TaskConfigurationWebhook{}
+		err = json.Unmarshal([]byte(obj.Configuration.String()), &cfg)
+		if err == nil {
+			return cfg, err
+		}
+	default:
+		return nil, errors.New("unknown task type")
+	}
+
+	return nil, err
 }
 
 // Rules is the resolver for the rules field.
@@ -90,7 +111,29 @@ func (r *taskResolver) UpdatedAt(ctx context.Context, obj *models.Task) (int64, 
 	return obj.GetUpdatedAt(), nil
 }
 
+// Timeout is the resolver for the timeout field.
+func (r *taskConfigurationShellResolver) Timeout(ctx context.Context, obj *models.TaskConfigurationShell) (int64, error) {
+	return obj.Timeout.Milliseconds(), nil
+}
+
+// Method is the resolver for the method field.
+func (r *taskConfigurationWebhookResolver) Method(ctx context.Context, obj *models.TaskConfigurationWebhook) (models1.HTTPMethod, error) {
+	return models1.HTTPMethod(obj.Method), nil
+}
+
 // Task returns generated.TaskResolver implementation.
 func (r *Resolver) Task() generated.TaskResolver { return &taskResolver{r} }
 
+// TaskConfigurationShell returns generated.TaskConfigurationShellResolver implementation.
+func (r *Resolver) TaskConfigurationShell() generated.TaskConfigurationShellResolver {
+	return &taskConfigurationShellResolver{r}
+}
+
+// TaskConfigurationWebhook returns generated.TaskConfigurationWebhookResolver implementation.
+func (r *Resolver) TaskConfigurationWebhook() generated.TaskConfigurationWebhookResolver {
+	return &taskConfigurationWebhookResolver{r}
+}
+
 type taskResolver struct{ *Resolver }
+type taskConfigurationShellResolver struct{ *Resolver }
+type taskConfigurationWebhookResolver struct{ *Resolver }

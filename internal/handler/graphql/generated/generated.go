@@ -40,6 +40,8 @@ type ResolverRoot interface {
 	Job() JobResolver
 	Query() QueryResolver
 	Task() TaskResolver
+	TaskConfigurationShell() TaskConfigurationShellResolver
+	TaskConfigurationWebhook() TaskConfigurationWebhookResolver
 	TaskRule() TaskRuleResolver
 }
 
@@ -81,6 +83,16 @@ type ComplexityRoot struct {
 		UpdatedAt       func(childComplexity int) int
 	}
 
+	TaskConfigurationShell struct {
+		Command func(childComplexity int) int
+		Timeout func(childComplexity int) int
+	}
+
+	TaskConfigurationWebhook struct {
+		Method func(childComplexity int) int
+		URL    func(childComplexity int) int
+	}
+
 	TaskRule struct {
 		CreatedAt       func(childComplexity int) int
 		Description     func(childComplexity int) int
@@ -116,13 +128,19 @@ type TaskResolver interface {
 	ID(ctx context.Context, obj *models.Task) (int64, error)
 
 	Type(ctx context.Context, obj *models.Task) (models.TaskType, error)
-	Configuration(ctx context.Context, obj *models.Task) (string, error)
+	Configuration(ctx context.Context, obj *models.Task) (models1.TaskConfiguration, error)
 	Rules(ctx context.Context, obj *models.Task, limit int, offset int) ([]models.TaskRule, error)
 	Jobs(ctx context.Context, obj *models.Task, limit int, offset int, reverseOrder bool) ([]models.Job, error)
 	LastRunningAt(ctx context.Context, obj *models.Task) (int64, error)
 
 	CreatedAt(ctx context.Context, obj *models.Task) (int64, error)
 	UpdatedAt(ctx context.Context, obj *models.Task) (int64, error)
+}
+type TaskConfigurationShellResolver interface {
+	Timeout(ctx context.Context, obj *models.TaskConfigurationShell) (int64, error)
+}
+type TaskConfigurationWebhookResolver interface {
+	Method(ctx context.Context, obj *models.TaskConfigurationWebhook) (models1.HTTPMethod, error)
 }
 type TaskRuleResolver interface {
 	ID(ctx context.Context, obj *models.TaskRule) (int64, error)
@@ -356,6 +374,34 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Task.UpdatedAt(childComplexity), true
 
+	case "TaskConfigurationShell.command":
+		if e.complexity.TaskConfigurationShell.Command == nil {
+			break
+		}
+
+		return e.complexity.TaskConfigurationShell.Command(childComplexity), true
+
+	case "TaskConfigurationShell.timeout":
+		if e.complexity.TaskConfigurationShell.Timeout == nil {
+			break
+		}
+
+		return e.complexity.TaskConfigurationShell.Timeout(childComplexity), true
+
+	case "TaskConfigurationWebhook.method":
+		if e.complexity.TaskConfigurationWebhook.Method == nil {
+			break
+		}
+
+		return e.complexity.TaskConfigurationWebhook.Method(childComplexity), true
+
+	case "TaskConfigurationWebhook.url":
+		if e.complexity.TaskConfigurationWebhook.URL == nil {
+			break
+		}
+
+		return e.complexity.TaskConfigurationWebhook.URL(childComplexity), true
+
 	case "TaskRule.created_at":
 		if e.complexity.TaskRule.CreatedAt == nil {
 			break
@@ -557,6 +603,36 @@ interface Model {
     WEBHOOK
 }
 
+enum HTTPMethod {
+    GET
+    HEAD
+    POST
+    PUT
+    PATCH
+    DELETE
+    CONNECT
+    OPTIONS
+    TRACE
+}
+
+"""
+TaskConfigurationShell is the configuration for shell type tasks
+"""
+type TaskConfigurationShell {
+    command: String!
+    timeout: Int64!
+}
+
+"""
+TaskConfigurationShell is the configuration for webhook type tasks
+"""
+type TaskConfigurationWebhook {
+    url: String!
+    method: HTTPMethod!
+}
+
+union TaskConfiguration = TaskConfigurationShell | TaskConfigurationWebhook
+
 type Task implements Model {
     """
     Task ID
@@ -571,9 +647,9 @@ type Task implements Model {
     """
     type: TaskType!
     """
-    Task configuration in JSON
+    Task configuration
     """
-    configuration: String!
+    configuration: TaskConfiguration!
     """
     Rules of the task
     """
@@ -1963,9 +2039,9 @@ func (ec *executionContext) _Task_configuration(ctx context.Context, field graph
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(models1.TaskConfiguration)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNTaskConfiguration2githubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋhandlerᚋgraphqlᚋmodelsᚐTaskConfiguration(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Task_configuration(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -1975,7 +2051,7 @@ func (ec *executionContext) fieldContext_Task_configuration(ctx context.Context,
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
+			return nil, errors.New("field of type TaskConfiguration does not have child fields")
 		},
 	}
 	return fc, nil
@@ -2350,6 +2426,182 @@ func (ec *executionContext) fieldContext_Task_status(ctx context.Context, field 
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Status does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TaskConfigurationShell_command(ctx context.Context, field graphql.CollectedField, obj *models.TaskConfigurationShell) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TaskConfigurationShell_command(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Command, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TaskConfigurationShell_command(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TaskConfigurationShell",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TaskConfigurationShell_timeout(ctx context.Context, field graphql.CollectedField, obj *models.TaskConfigurationShell) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TaskConfigurationShell_timeout(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.TaskConfigurationShell().Timeout(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TaskConfigurationShell_timeout(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TaskConfigurationShell",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TaskConfigurationWebhook_url(ctx context.Context, field graphql.CollectedField, obj *models.TaskConfigurationWebhook) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TaskConfigurationWebhook_url(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.URL, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TaskConfigurationWebhook_url(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TaskConfigurationWebhook",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TaskConfigurationWebhook_method(ctx context.Context, field graphql.CollectedField, obj *models.TaskConfigurationWebhook) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TaskConfigurationWebhook_method(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.TaskConfigurationWebhook().Method(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(models1.HTTPMethod)
+	fc.Result = res
+	return ec.marshalNHTTPMethod2githubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋhandlerᚋgraphqlᚋmodelsᚐHTTPMethod(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TaskConfigurationWebhook_method(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TaskConfigurationWebhook",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type HTTPMethod does not have child fields")
 		},
 	}
 	return fc, nil
@@ -4659,6 +4911,29 @@ func (ec *executionContext) _Model(ctx context.Context, sel ast.SelectionSet, ob
 	}
 }
 
+func (ec *executionContext) _TaskConfiguration(ctx context.Context, sel ast.SelectionSet, obj models1.TaskConfiguration) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case models.TaskConfigurationShell:
+		return ec._TaskConfigurationShell(ctx, sel, &obj)
+	case *models.TaskConfigurationShell:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._TaskConfigurationShell(ctx, sel, obj)
+	case models.TaskConfigurationWebhook:
+		return ec._TaskConfigurationWebhook(ctx, sel, &obj)
+	case *models.TaskConfigurationWebhook:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._TaskConfigurationWebhook(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
 // endregion ************************** interface.gotpl ***************************
 
 // region    **************************** object.gotpl ****************************
@@ -5188,6 +5463,102 @@ func (ec *executionContext) _Task(ctx context.Context, sel ast.SelectionSet, obj
 	return out
 }
 
+var taskConfigurationShellImplementors = []string{"TaskConfigurationShell", "TaskConfiguration"}
+
+func (ec *executionContext) _TaskConfigurationShell(ctx context.Context, sel ast.SelectionSet, obj *models.TaskConfigurationShell) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, taskConfigurationShellImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("TaskConfigurationShell")
+		case "command":
+
+			out.Values[i] = ec._TaskConfigurationShell_command(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "timeout":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._TaskConfigurationShell_timeout(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var taskConfigurationWebhookImplementors = []string{"TaskConfigurationWebhook", "TaskConfiguration"}
+
+func (ec *executionContext) _TaskConfigurationWebhook(ctx context.Context, sel ast.SelectionSet, obj *models.TaskConfigurationWebhook) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, taskConfigurationWebhookImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("TaskConfigurationWebhook")
+		case "url":
+
+			out.Values[i] = ec._TaskConfigurationWebhook_url(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "method":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._TaskConfigurationWebhook_method(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var taskRuleImplementors = []string{"TaskRule", "Model"}
 
 func (ec *executionContext) _TaskRule(ctx context.Context, sel ast.SelectionSet, obj *models.TaskRule) graphql.Marshaler {
@@ -5703,6 +6074,16 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
+func (ec *executionContext) unmarshalNHTTPMethod2githubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋhandlerᚋgraphqlᚋmodelsᚐHTTPMethod(ctx context.Context, v interface{}) (models1.HTTPMethod, error) {
+	var res models1.HTTPMethod
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNHTTPMethod2githubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋhandlerᚋgraphqlᚋmodelsᚐHTTPMethod(ctx context.Context, sel ast.SelectionSet, v models1.HTTPMethod) graphql.Marshaler {
+	return v
+}
+
 func (ec *executionContext) unmarshalNID2int64(ctx context.Context, v interface{}) (int64, error) {
 	res, err := graphql.UnmarshalInt64(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -5877,6 +6258,16 @@ func (ec *executionContext) marshalNTask2ᚖgithubᚗcomᚋbzp2010ᚋscheduleᚋ
 		return graphql.Null
 	}
 	return ec._Task(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNTaskConfiguration2githubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋhandlerᚋgraphqlᚋmodelsᚐTaskConfiguration(ctx context.Context, sel ast.SelectionSet, v models1.TaskConfiguration) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._TaskConfiguration(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNTaskRule2githubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTaskRule(ctx context.Context, sel ast.SelectionSet, v models.TaskRule) graphql.Marshaler {

@@ -2,9 +2,74 @@
 
 package models
 
+import (
+	"fmt"
+	"io"
+	"strconv"
+)
+
 type Model interface {
 	IsModel()
 	GetID() int64
 	GetCreatedAt() int64
 	GetUpdatedAt() int64
+}
+
+type TaskConfiguration interface {
+	IsTaskConfiguration()
+}
+
+type HTTPMethod string
+
+const (
+	HTTPMethodGet     HTTPMethod = "GET"
+	HTTPMethodHead    HTTPMethod = "HEAD"
+	HTTPMethodPost    HTTPMethod = "POST"
+	HTTPMethodPut     HTTPMethod = "PUT"
+	HTTPMethodPatch   HTTPMethod = "PATCH"
+	HTTPMethodDelete  HTTPMethod = "DELETE"
+	HTTPMethodConnect HTTPMethod = "CONNECT"
+	HTTPMethodOptions HTTPMethod = "OPTIONS"
+	HTTPMethodTrace   HTTPMethod = "TRACE"
+)
+
+var AllHTTPMethod = []HTTPMethod{
+	HTTPMethodGet,
+	HTTPMethodHead,
+	HTTPMethodPost,
+	HTTPMethodPut,
+	HTTPMethodPatch,
+	HTTPMethodDelete,
+	HTTPMethodConnect,
+	HTTPMethodOptions,
+	HTTPMethodTrace,
+}
+
+func (e HTTPMethod) IsValid() bool {
+	switch e {
+	case HTTPMethodGet, HTTPMethodHead, HTTPMethodPost, HTTPMethodPut, HTTPMethodPatch, HTTPMethodDelete, HTTPMethodConnect, HTTPMethodOptions, HTTPMethodTrace:
+		return true
+	}
+	return false
+}
+
+func (e HTTPMethod) String() string {
+	return string(e)
+}
+
+func (e *HTTPMethod) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = HTTPMethod(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid HTTPMethod", str)
+	}
+	return nil
+}
+
+func (e HTTPMethod) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
 }

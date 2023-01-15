@@ -51,6 +51,16 @@ type TaskConfigurationShell struct {
 	Timeout time.Duration
 }
 
+func (tcs TaskConfigurationShell) IsTaskConfiguration() {}
+
+// TaskConfigurationShell define the data structure of webhook task configuration
+type TaskConfigurationWebhook struct {
+	URL    string `json:"url"`
+	Method string
+}
+
+func (tcw TaskConfigurationWebhook) IsTaskConfiguration() {}
+
 // Implement GraphQL's models.Model interface to simplify data assembly,
 // the data corresponding to models.Model is gorm.Model
 func (t Task) IsModel() {}

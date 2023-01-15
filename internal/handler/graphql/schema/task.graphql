@@ -9,6 +9,36 @@ enum TaskType {
     WEBHOOK
 }
 
+enum HTTPMethod {
+    GET
+    HEAD
+    POST
+    PUT
+    PATCH
+    DELETE
+    CONNECT
+    OPTIONS
+    TRACE
+}
+
+"""
+TaskConfigurationShell is the configuration for shell type tasks
+"""
+type TaskConfigurationShell {
+    command: String!
+    timeout: Int64!
+}
+
+"""
+TaskConfigurationShell is the configuration for webhook type tasks
+"""
+type TaskConfigurationWebhook {
+    url: String!
+    method: HTTPMethod!
+}
+
+union TaskConfiguration = TaskConfigurationShell | TaskConfigurationWebhook
+
 type Task implements Model {
     """
     Task ID
@@ -23,9 +53,9 @@ type Task implements Model {
     """
     type: TaskType!
     """
-    Task configuration in JSON
+    Task configuration
     """
-    configuration: String!
+    configuration: TaskConfiguration!
     """
     Rules of the task
     """
