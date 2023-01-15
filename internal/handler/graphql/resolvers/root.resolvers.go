@@ -41,6 +41,40 @@ func (r *queryResolver) Tasks(ctx context.Context, limit int, offset int) ([]mod
 	return tasks, nil
 }
 
+// Job is the resolver for the job field.
+func (r *queryResolver) Job(ctx context.Context, id int64) (*models.Job, error) {
+	var job models.Job
+	result := database.GetDatabase().Where("id = ?", id).Find(&job)
+	if err := result.Error; err != nil {
+		return nil, err
+	}
+	if result.RowsAffected <= 0 {
+		return nil, fmt.Errorf("job does not exist: id %d", id)
+	}
+	return &job, nil
+}
+
+// Jobs is the resolver for the jobs field.
+func (r *queryResolver) Jobs(ctx context.Context, limit int, offset int, reverseOrder bool) ([]models.Job, error) {
+	if limit <= 0 {
+		return nil, consts.ErrLimitEmpty
+	}
+
+	var jobs []models.Job
+	result := database.GetDatabase().Offset(offset).Limit(limit)
+
+	// reverse order by ID by default (i.e. view recent data)
+	if reverseOrder {
+		result.Order("id desc")
+	}
+
+	result.Find(&jobs)
+	if err := result.Error; err != nil {
+		return nil, err
+	}
+	return jobs, nil
+}
+
 // Query returns generated.QueryResolver implementation.
 func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 

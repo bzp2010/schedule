@@ -9,6 +9,7 @@ import (
 
 	"github.com/bzp2010/schedule/internal/database"
 	"github.com/bzp2010/schedule/internal/database/models"
+	"github.com/bzp2010/schedule/internal/handler/graphql/consts"
 	"github.com/bzp2010/schedule/internal/handler/graphql/generated"
 	"github.com/icza/gog"
 )
@@ -44,6 +45,30 @@ func (r *taskRuleResolver) LastRunningAt(ctx context.Context, obj *models.TaskRu
 		obj.LastRunningAt.Time.UnixMilli(),
 		int64(0),
 	), nil
+}
+
+// Jobs is the resolver for the jobs field.
+func (r *taskRuleResolver) Jobs(ctx context.Context, obj *models.TaskRule, limit int, offset int, reverseOrder bool) ([]models.Job, error) {
+	if limit <= 0 {
+		return nil, consts.ErrLimitEmpty
+	}
+
+	var jobs []models.Job
+	result := database.GetDatabase().
+		Where("task_rule_id = ?", obj.ID).
+		Limit(limit).
+		Offset(offset)
+
+	// reverse order by ID by default (i.e. view recent data)
+	if reverseOrder {
+		result.Order("id desc")
+	}
+
+	result.Find(&jobs)
+	if err := result.Error; err != nil {
+		return nil, err
+	}
+	return jobs, nil
 }
 
 // CreatedAt is the resolver for the created_at field.

@@ -61,3 +61,19 @@ func (job *Job) HasFlag(flag JobFlag) bool {
 func (job *Job) RemoveFlag(flag JobFlag) {
 	job.Flags &= ^uint64(flag)
 }
+
+// Implement GraphQL's models.Model interface to simplify data assembly,
+// the data corresponding to models.Model is gorm.Model
+func (job Job) IsModel() {}
+
+func (job Job) GetID() int64 {
+	return int64(job.ID)
+}
+
+func (job Job) GetCreatedAt() int64 {
+	return job.CreatedAt.UnixMilli()
+}
+
+func (job Job) GetUpdatedAt() int64 {
+	return job.CreatedAt.UnixMilli()
+}

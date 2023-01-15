@@ -37,6 +37,7 @@ type Config struct {
 }
 
 type ResolverRoot interface {
+	Job() JobResolver
 	Query() QueryResolver
 	Task() TaskResolver
 	TaskRule() TaskRuleResolver
@@ -46,7 +47,22 @@ type DirectiveRoot struct {
 }
 
 type ComplexityRoot struct {
+	Job struct {
+		CreatedAt func(childComplexity int) int
+		ID        func(childComplexity int) int
+		IsTimeout func(childComplexity int) int
+		StartAt   func(childComplexity int) int
+		Stderr    func(childComplexity int) int
+		Stdout    func(childComplexity int) int
+		StopAt    func(childComplexity int) int
+		Task      func(childComplexity int) int
+		TaskRule  func(childComplexity int) int
+		UpdatedAt func(childComplexity int) int
+	}
+
 	Query struct {
+		Job   func(childComplexity int, id int64) int
+		Jobs  func(childComplexity int, limit int, offset int, reverseOrder bool) int
 		Task  func(childComplexity int, id int64) int
 		Tasks func(childComplexity int, limit int, offset int) int
 	}
@@ -55,6 +71,7 @@ type ComplexityRoot struct {
 		Configuration   func(childComplexity int) int
 		CreatedAt       func(childComplexity int) int
 		ID              func(childComplexity int) int
+		Jobs            func(childComplexity int, limit int, offset int, reverseOrder bool) int
 		LastRunningAt   func(childComplexity int) int
 		LastRunningTime func(childComplexity int) int
 		Name            func(childComplexity int) int
@@ -68,6 +85,7 @@ type ComplexityRoot struct {
 		CreatedAt       func(childComplexity int) int
 		Description     func(childComplexity int) int
 		ID              func(childComplexity int) int
+		Jobs            func(childComplexity int, limit int, offset int, reverseOrder bool) int
 		LastRunningAt   func(childComplexity int) int
 		LastRunningTime func(childComplexity int) int
 		Rule            func(childComplexity int) int
@@ -77,9 +95,22 @@ type ComplexityRoot struct {
 	}
 }
 
+type JobResolver interface {
+	ID(ctx context.Context, obj *models.Job) (int64, error)
+	Task(ctx context.Context, obj *models.Job) (*models.Task, error)
+	TaskRule(ctx context.Context, obj *models.Job) (*models.TaskRule, error)
+
+	StartAt(ctx context.Context, obj *models.Job) (int64, error)
+	StopAt(ctx context.Context, obj *models.Job) (int64, error)
+	IsTimeout(ctx context.Context, obj *models.Job) (bool, error)
+	CreatedAt(ctx context.Context, obj *models.Job) (int64, error)
+	UpdatedAt(ctx context.Context, obj *models.Job) (int64, error)
+}
 type QueryResolver interface {
 	Task(ctx context.Context, id int64) (*models.Task, error)
 	Tasks(ctx context.Context, limit int, offset int) ([]models.Task, error)
+	Job(ctx context.Context, id int64) (*models.Job, error)
+	Jobs(ctx context.Context, limit int, offset int, reverseOrder bool) ([]models.Job, error)
 }
 type TaskResolver interface {
 	ID(ctx context.Context, obj *models.Task) (int64, error)
@@ -87,6 +118,7 @@ type TaskResolver interface {
 	Type(ctx context.Context, obj *models.Task) (models.TaskType, error)
 	Configuration(ctx context.Context, obj *models.Task) (string, error)
 	Rules(ctx context.Context, obj *models.Task, limit int, offset int) ([]models.TaskRule, error)
+	Jobs(ctx context.Context, obj *models.Task, limit int, offset int, reverseOrder bool) ([]models.Job, error)
 	LastRunningAt(ctx context.Context, obj *models.Task) (int64, error)
 
 	CreatedAt(ctx context.Context, obj *models.Task) (int64, error)
@@ -99,6 +131,7 @@ type TaskRuleResolver interface {
 
 	LastRunningAt(ctx context.Context, obj *models.TaskRule) (int64, error)
 
+	Jobs(ctx context.Context, obj *models.TaskRule, limit int, offset int, reverseOrder bool) ([]models.Job, error)
 	CreatedAt(ctx context.Context, obj *models.TaskRule) (int64, error)
 	UpdatedAt(ctx context.Context, obj *models.TaskRule) (int64, error)
 }
@@ -117,6 +150,100 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	ec := executionContext{nil, e}
 	_ = ec
 	switch typeName + "." + field {
+
+	case "Job.created_at":
+		if e.complexity.Job.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.Job.CreatedAt(childComplexity), true
+
+	case "Job.id":
+		if e.complexity.Job.ID == nil {
+			break
+		}
+
+		return e.complexity.Job.ID(childComplexity), true
+
+	case "Job.is_timeout":
+		if e.complexity.Job.IsTimeout == nil {
+			break
+		}
+
+		return e.complexity.Job.IsTimeout(childComplexity), true
+
+	case "Job.start_at":
+		if e.complexity.Job.StartAt == nil {
+			break
+		}
+
+		return e.complexity.Job.StartAt(childComplexity), true
+
+	case "Job.stderr":
+		if e.complexity.Job.Stderr == nil {
+			break
+		}
+
+		return e.complexity.Job.Stderr(childComplexity), true
+
+	case "Job.stdout":
+		if e.complexity.Job.Stdout == nil {
+			break
+		}
+
+		return e.complexity.Job.Stdout(childComplexity), true
+
+	case "Job.stop_at":
+		if e.complexity.Job.StopAt == nil {
+			break
+		}
+
+		return e.complexity.Job.StopAt(childComplexity), true
+
+	case "Job.task":
+		if e.complexity.Job.Task == nil {
+			break
+		}
+
+		return e.complexity.Job.Task(childComplexity), true
+
+	case "Job.task_rule":
+		if e.complexity.Job.TaskRule == nil {
+			break
+		}
+
+		return e.complexity.Job.TaskRule(childComplexity), true
+
+	case "Job.updated_at":
+		if e.complexity.Job.UpdatedAt == nil {
+			break
+		}
+
+		return e.complexity.Job.UpdatedAt(childComplexity), true
+
+	case "Query.job":
+		if e.complexity.Query.Job == nil {
+			break
+		}
+
+		args, err := ec.field_Query_job_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Job(childComplexity, args["id"].(int64)), true
+
+	case "Query.jobs":
+		if e.complexity.Query.Jobs == nil {
+			break
+		}
+
+		args, err := ec.field_Query_jobs_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Jobs(childComplexity, args["limit"].(int), args["offset"].(int), args["reverse_order"].(bool)), true
 
 	case "Query.task":
 		if e.complexity.Query.Task == nil {
@@ -162,6 +289,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Task.ID(childComplexity), true
+
+	case "Task.jobs":
+		if e.complexity.Task.Jobs == nil {
+			break
+		}
+
+		args, err := ec.field_Task_jobs_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Task.Jobs(childComplexity, args["limit"].(int), args["offset"].(int), args["reverse_order"].(bool)), true
 
 	case "Task.last_running_at":
 		if e.complexity.Task.LastRunningAt == nil {
@@ -237,6 +376,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.TaskRule.ID(childComplexity), true
+
+	case "TaskRule.jobs":
+		if e.complexity.TaskRule.Jobs == nil {
+			break
+		}
+
+		args, err := ec.field_TaskRule_jobs_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.TaskRule.Jobs(childComplexity, args["limit"].(int), args["offset"].(int), args["reverse_order"].(bool)), true
 
 	case "TaskRule.last_running_at":
 		if e.complexity.TaskRule.LastRunningAt == nil {
@@ -332,6 +483,49 @@ func (ec *executionContext) introspectType(name string) (*introspection.Type, er
 }
 
 var sources = []*ast.Source{
+	{Name: "../schema/job.graphql", Input: `type Job implements Model {
+    """
+    Job ID
+    """
+    id: ID!
+    """
+    Job associated task
+    """
+    task: Task!
+    """
+    Job associated task rule
+    """
+    task_rule: TaskRule!
+    """
+    The stdout of job
+    """
+    stdout: String!
+    """
+    The stderr of job
+    """
+    stderr: String!
+    """
+    Job execution starts at
+    """
+    start_at: Int64!
+    """
+    Job execution stops at
+    """
+    stop_at: Int64!
+    """
+    Job execution timeout
+    """
+    is_timeout: Boolean!
+    """
+    Create time of the job
+    """
+    created_at: Int64!
+    """
+    Last update time of the job
+    """
+    updated_at: Int64!
+}
+`, BuiltIn: false},
 	{Name: "../schema/root.graphql", Input: `scalar Int64
 
 enum Status {
@@ -342,6 +536,8 @@ enum Status {
 type Query {
     task(id: ID!): Task
     tasks(limit: Int! = 10, offset: Int! = 0): [Task!]!
+    job(id: ID!): Job
+    jobs(limit: Int! = 10, offset: Int! = 0, reverse_order: Boolean! = true): [Job!]!
 }
 
 interface Model {
@@ -382,6 +578,10 @@ type Task implements Model {
     Rules of the task
     """
     rules(limit: Int! = 10, offset: Int! = 0): [TaskRule!]!
+    """
+    Jobs associated with the task
+    """
+    jobs(limit: Int! = 10, offset: Int! = 0, reverse_order: Boolean! = true): [Job!]!
     """
     Last execution moment of the task
     """
@@ -430,6 +630,10 @@ type Task implements Model {
     """
     last_running_time: Int64!
     """
+    Jobs associated with the rule
+    """
+    jobs(limit: Int! = 10, offset: Int! = 0, reverse_order: Boolean! = true): [Job!]!
+    """
     Create time of the task
     """
     created_at: Int64!
@@ -462,6 +666,54 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 		}
 	}
 	args["name"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_job_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int64
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2int64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_jobs_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int
+	if tmp, ok := rawArgs["limit"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("limit"))
+		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["limit"] = arg0
+	var arg1 int
+	if tmp, ok := rawArgs["offset"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("offset"))
+		arg1, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["offset"] = arg1
+	var arg2 bool
+	if tmp, ok := rawArgs["reverse_order"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("reverse_order"))
+		arg2, err = ec.unmarshalNBoolean2bool(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["reverse_order"] = arg2
 	return args, nil
 }
 
@@ -501,6 +753,72 @@ func (ec *executionContext) field_Query_tasks_args(ctx context.Context, rawArgs 
 		}
 	}
 	args["offset"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_TaskRule_jobs_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int
+	if tmp, ok := rawArgs["limit"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("limit"))
+		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["limit"] = arg0
+	var arg1 int
+	if tmp, ok := rawArgs["offset"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("offset"))
+		arg1, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["offset"] = arg1
+	var arg2 bool
+	if tmp, ok := rawArgs["reverse_order"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("reverse_order"))
+		arg2, err = ec.unmarshalNBoolean2bool(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["reverse_order"] = arg2
+	return args, nil
+}
+
+func (ec *executionContext) field_Task_jobs_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int
+	if tmp, ok := rawArgs["limit"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("limit"))
+		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["limit"] = arg0
+	var arg1 int
+	if tmp, ok := rawArgs["offset"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("offset"))
+		arg1, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["offset"] = arg1
+	var arg2 bool
+	if tmp, ok := rawArgs["reverse_order"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("reverse_order"))
+		arg2, err = ec.unmarshalNBoolean2bool(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["reverse_order"] = arg2
 	return args, nil
 }
 
@@ -566,6 +884,492 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 
 // region    **************************** field.gotpl *****************************
 
+func (ec *executionContext) _Job_id(ctx context.Context, field graphql.CollectedField, obj *models.Job) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Job_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Job().ID(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNID2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Job_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Job",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Job_task(ctx context.Context, field graphql.CollectedField, obj *models.Job) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Job_task(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Job().Task(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.Task)
+	fc.Result = res
+	return ec.marshalNTask2ᚖgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTask(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Job_task(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Job",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Task_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Task_name(ctx, field)
+			case "type":
+				return ec.fieldContext_Task_type(ctx, field)
+			case "configuration":
+				return ec.fieldContext_Task_configuration(ctx, field)
+			case "rules":
+				return ec.fieldContext_Task_rules(ctx, field)
+			case "jobs":
+				return ec.fieldContext_Task_jobs(ctx, field)
+			case "last_running_at":
+				return ec.fieldContext_Task_last_running_at(ctx, field)
+			case "last_running_time":
+				return ec.fieldContext_Task_last_running_time(ctx, field)
+			case "created_at":
+				return ec.fieldContext_Task_created_at(ctx, field)
+			case "updated_at":
+				return ec.fieldContext_Task_updated_at(ctx, field)
+			case "status":
+				return ec.fieldContext_Task_status(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Task", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Job_task_rule(ctx context.Context, field graphql.CollectedField, obj *models.Job) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Job_task_rule(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Job().TaskRule(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.TaskRule)
+	fc.Result = res
+	return ec.marshalNTaskRule2ᚖgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTaskRule(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Job_task_rule(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Job",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_TaskRule_id(ctx, field)
+			case "task":
+				return ec.fieldContext_TaskRule_task(ctx, field)
+			case "description":
+				return ec.fieldContext_TaskRule_description(ctx, field)
+			case "rule":
+				return ec.fieldContext_TaskRule_rule(ctx, field)
+			case "last_running_at":
+				return ec.fieldContext_TaskRule_last_running_at(ctx, field)
+			case "last_running_time":
+				return ec.fieldContext_TaskRule_last_running_time(ctx, field)
+			case "jobs":
+				return ec.fieldContext_TaskRule_jobs(ctx, field)
+			case "created_at":
+				return ec.fieldContext_TaskRule_created_at(ctx, field)
+			case "updated_at":
+				return ec.fieldContext_TaskRule_updated_at(ctx, field)
+			case "status":
+				return ec.fieldContext_TaskRule_status(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TaskRule", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Job_stdout(ctx context.Context, field graphql.CollectedField, obj *models.Job) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Job_stdout(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Stdout, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Job_stdout(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Job",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Job_stderr(ctx context.Context, field graphql.CollectedField, obj *models.Job) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Job_stderr(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Stderr, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Job_stderr(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Job",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Job_start_at(ctx context.Context, field graphql.CollectedField, obj *models.Job) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Job_start_at(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Job().StartAt(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Job_start_at(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Job",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Job_stop_at(ctx context.Context, field graphql.CollectedField, obj *models.Job) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Job_stop_at(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Job().StopAt(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Job_stop_at(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Job",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Job_is_timeout(ctx context.Context, field graphql.CollectedField, obj *models.Job) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Job_is_timeout(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Job().IsTimeout(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Job_is_timeout(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Job",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Job_created_at(ctx context.Context, field graphql.CollectedField, obj *models.Job) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Job_created_at(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Job().CreatedAt(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Job_created_at(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Job",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Job_updated_at(ctx context.Context, field graphql.CollectedField, obj *models.Job) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Job_updated_at(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Job().UpdatedAt(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Job_updated_at(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Job",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_task(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Query_task(ctx, field)
 	if err != nil {
@@ -612,6 +1416,8 @@ func (ec *executionContext) fieldContext_Query_task(ctx context.Context, field g
 				return ec.fieldContext_Task_configuration(ctx, field)
 			case "rules":
 				return ec.fieldContext_Task_rules(ctx, field)
+			case "jobs":
+				return ec.fieldContext_Task_jobs(ctx, field)
 			case "last_running_at":
 				return ec.fieldContext_Task_last_running_at(ctx, field)
 			case "last_running_time":
@@ -689,6 +1495,8 @@ func (ec *executionContext) fieldContext_Query_tasks(ctx context.Context, field 
 				return ec.fieldContext_Task_configuration(ctx, field)
 			case "rules":
 				return ec.fieldContext_Task_rules(ctx, field)
+			case "jobs":
+				return ec.fieldContext_Task_jobs(ctx, field)
 			case "last_running_at":
 				return ec.fieldContext_Task_last_running_at(ctx, field)
 			case "last_running_time":
@@ -711,6 +1519,157 @@ func (ec *executionContext) fieldContext_Query_tasks(ctx context.Context, field 
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Query_tasks_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_job(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_job(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Job(rctx, fc.Args["id"].(int64))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*models.Job)
+	fc.Result = res
+	return ec.marshalOJob2ᚖgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐJob(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_job(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Job_id(ctx, field)
+			case "task":
+				return ec.fieldContext_Job_task(ctx, field)
+			case "task_rule":
+				return ec.fieldContext_Job_task_rule(ctx, field)
+			case "stdout":
+				return ec.fieldContext_Job_stdout(ctx, field)
+			case "stderr":
+				return ec.fieldContext_Job_stderr(ctx, field)
+			case "start_at":
+				return ec.fieldContext_Job_start_at(ctx, field)
+			case "stop_at":
+				return ec.fieldContext_Job_stop_at(ctx, field)
+			case "is_timeout":
+				return ec.fieldContext_Job_is_timeout(ctx, field)
+			case "created_at":
+				return ec.fieldContext_Job_created_at(ctx, field)
+			case "updated_at":
+				return ec.fieldContext_Job_updated_at(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Job", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_job_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_jobs(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_jobs(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Jobs(rctx, fc.Args["limit"].(int), fc.Args["offset"].(int), fc.Args["reverse_order"].(bool))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]models.Job)
+	fc.Result = res
+	return ec.marshalNJob2ᚕgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐJobᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_jobs(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Job_id(ctx, field)
+			case "task":
+				return ec.fieldContext_Job_task(ctx, field)
+			case "task_rule":
+				return ec.fieldContext_Job_task_rule(ctx, field)
+			case "stdout":
+				return ec.fieldContext_Job_stdout(ctx, field)
+			case "stderr":
+				return ec.fieldContext_Job_stderr(ctx, field)
+			case "start_at":
+				return ec.fieldContext_Job_start_at(ctx, field)
+			case "stop_at":
+				return ec.fieldContext_Job_stop_at(ctx, field)
+			case "is_timeout":
+				return ec.fieldContext_Job_is_timeout(ctx, field)
+			case "created_at":
+				return ec.fieldContext_Job_created_at(ctx, field)
+			case "updated_at":
+				return ec.fieldContext_Job_updated_at(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Job", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_jobs_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return
 	}
@@ -1073,6 +2032,8 @@ func (ec *executionContext) fieldContext_Task_rules(ctx context.Context, field g
 				return ec.fieldContext_TaskRule_last_running_at(ctx, field)
 			case "last_running_time":
 				return ec.fieldContext_TaskRule_last_running_time(ctx, field)
+			case "jobs":
+				return ec.fieldContext_TaskRule_jobs(ctx, field)
 			case "created_at":
 				return ec.fieldContext_TaskRule_created_at(ctx, field)
 			case "updated_at":
@@ -1091,6 +2052,83 @@ func (ec *executionContext) fieldContext_Task_rules(ctx context.Context, field g
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Task_rules_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Task_jobs(ctx context.Context, field graphql.CollectedField, obj *models.Task) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Task_jobs(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Task().Jobs(rctx, obj, fc.Args["limit"].(int), fc.Args["offset"].(int), fc.Args["reverse_order"].(bool))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]models.Job)
+	fc.Result = res
+	return ec.marshalNJob2ᚕgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐJobᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Task_jobs(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Task",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Job_id(ctx, field)
+			case "task":
+				return ec.fieldContext_Job_task(ctx, field)
+			case "task_rule":
+				return ec.fieldContext_Job_task_rule(ctx, field)
+			case "stdout":
+				return ec.fieldContext_Job_stdout(ctx, field)
+			case "stderr":
+				return ec.fieldContext_Job_stderr(ctx, field)
+			case "start_at":
+				return ec.fieldContext_Job_start_at(ctx, field)
+			case "stop_at":
+				return ec.fieldContext_Job_stop_at(ctx, field)
+			case "is_timeout":
+				return ec.fieldContext_Job_is_timeout(ctx, field)
+			case "created_at":
+				return ec.fieldContext_Job_created_at(ctx, field)
+			case "updated_at":
+				return ec.fieldContext_Job_updated_at(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Job", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Task_jobs_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return
 	}
@@ -1410,6 +2448,8 @@ func (ec *executionContext) fieldContext_TaskRule_task(ctx context.Context, fiel
 				return ec.fieldContext_Task_configuration(ctx, field)
 			case "rules":
 				return ec.fieldContext_Task_rules(ctx, field)
+			case "jobs":
+				return ec.fieldContext_Task_jobs(ctx, field)
 			case "last_running_at":
 				return ec.fieldContext_Task_last_running_at(ctx, field)
 			case "last_running_time":
@@ -1599,6 +2639,83 @@ func (ec *executionContext) fieldContext_TaskRule_last_running_time(ctx context.
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int64 does not have child fields")
 		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TaskRule_jobs(ctx context.Context, field graphql.CollectedField, obj *models.TaskRule) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TaskRule_jobs(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.TaskRule().Jobs(rctx, obj, fc.Args["limit"].(int), fc.Args["offset"].(int), fc.Args["reverse_order"].(bool))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]models.Job)
+	fc.Result = res
+	return ec.marshalNJob2ᚕgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐJobᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TaskRule_jobs(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TaskRule",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Job_id(ctx, field)
+			case "task":
+				return ec.fieldContext_Job_task(ctx, field)
+			case "task_rule":
+				return ec.fieldContext_Job_task_rule(ctx, field)
+			case "stdout":
+				return ec.fieldContext_Job_stdout(ctx, field)
+			case "stderr":
+				return ec.fieldContext_Job_stderr(ctx, field)
+			case "start_at":
+				return ec.fieldContext_Job_start_at(ctx, field)
+			case "stop_at":
+				return ec.fieldContext_Job_stop_at(ctx, field)
+			case "is_timeout":
+				return ec.fieldContext_Job_is_timeout(ctx, field)
+			case "created_at":
+				return ec.fieldContext_Job_created_at(ctx, field)
+			case "updated_at":
+				return ec.fieldContext_Job_updated_at(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Job", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_TaskRule_jobs_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
 	}
 	return fc, nil
 }
@@ -3516,6 +4633,13 @@ func (ec *executionContext) _Model(ctx context.Context, sel ast.SelectionSet, ob
 	switch obj := (obj).(type) {
 	case nil:
 		return graphql.Null
+	case models.Job:
+		return ec._Job(ctx, sel, &obj)
+	case *models.Job:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._Job(ctx, sel, obj)
 	case models.Task:
 		return ec._Task(ctx, sel, &obj)
 	case *models.Task:
@@ -3538,6 +4662,201 @@ func (ec *executionContext) _Model(ctx context.Context, sel ast.SelectionSet, ob
 // endregion ************************** interface.gotpl ***************************
 
 // region    **************************** object.gotpl ****************************
+
+var jobImplementors = []string{"Job", "Model"}
+
+func (ec *executionContext) _Job(ctx context.Context, sel ast.SelectionSet, obj *models.Job) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, jobImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Job")
+		case "id":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Job_id(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		case "task":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Job_task(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		case "task_rule":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Job_task_rule(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		case "stdout":
+
+			out.Values[i] = ec._Job_stdout(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "stderr":
+
+			out.Values[i] = ec._Job_stderr(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "start_at":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Job_start_at(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		case "stop_at":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Job_stop_at(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		case "is_timeout":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Job_is_timeout(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		case "created_at":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Job_created_at(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		case "updated_at":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Job_updated_at(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
 
 var queryImplementors = []string{"Query"}
 
@@ -3588,6 +4907,49 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_tasks(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx, innerFunc)
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return rrm(innerCtx)
+			})
+		case "job":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_job(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx, innerFunc)
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return rrm(innerCtx)
+			})
+		case "jobs":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_jobs(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -3711,6 +5073,26 @@ func (ec *executionContext) _Task(ctx context.Context, sel ast.SelectionSet, obj
 					}
 				}()
 				res = ec._Task_rules(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		case "jobs":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Task_jobs(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -3910,6 +5292,26 @@ func (ec *executionContext) _TaskRule(ctx context.Context, sel ast.SelectionSet,
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
+		case "jobs":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._TaskRule_jobs(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
 		case "created_at":
 			field := field
 
@@ -4346,6 +5748,54 @@ func (ec *executionContext) marshalNInt642int64(ctx context.Context, sel ast.Sel
 	return res
 }
 
+func (ec *executionContext) marshalNJob2githubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐJob(ctx context.Context, sel ast.SelectionSet, v models.Job) graphql.Marshaler {
+	return ec._Job(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNJob2ᚕgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐJobᚄ(ctx context.Context, sel ast.SelectionSet, v []models.Job) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNJob2githubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐJob(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
 func (ec *executionContext) unmarshalNStatus2githubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐStatus(ctx context.Context, v interface{}) (models.Status, error) {
 	var res models.Status
 	err := res.UnmarshalGQL(v)
@@ -4475,6 +5925,16 @@ func (ec *executionContext) marshalNTaskRule2ᚕgithubᚗcomᚋbzp2010ᚋschedul
 	}
 
 	return ret
+}
+
+func (ec *executionContext) marshalNTaskRule2ᚖgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTaskRule(ctx context.Context, sel ast.SelectionSet, v *models.TaskRule) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._TaskRule(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNTaskType2githubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTaskType(ctx context.Context, v interface{}) (models.TaskType, error) {
@@ -4770,6 +6230,13 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	}
 	res := graphql.MarshalBoolean(*v)
 	return res
+}
+
+func (ec *executionContext) marshalOJob2ᚖgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐJob(ctx context.Context, sel ast.SelectionSet, v *models.Job) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Job(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOString2ᚖstring(ctx context.Context, v interface{}) (*string, error) {

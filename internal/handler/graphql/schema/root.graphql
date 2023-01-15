@@ -8,6 +8,8 @@ enum Status {
 type Query {
     task(id: ID!): Task
     tasks(limit: Int! = 10, offset: Int! = 0): [Task!]!
+    job(id: ID!): Job
+    jobs(limit: Int! = 10, offset: Int! = 0, reverse_order: Boolean! = true): [Job!]!
 }
 
 interface Model {

@@ -31,6 +31,10 @@ type Task implements Model {
     """
     rules(limit: Int! = 10, offset: Int! = 0): [TaskRule!]!
     """
+    Jobs associated with the task
+    """
+    jobs(limit: Int! = 10, offset: Int! = 0, reverse_order: Boolean! = true): [Job!]!
+    """
     Last execution moment of the task
     """
     last_running_at: Int64!

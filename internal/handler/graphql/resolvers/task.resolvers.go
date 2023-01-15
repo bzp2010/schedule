@@ -47,6 +47,30 @@ func (r *taskResolver) Rules(ctx context.Context, obj *models.Task, limit int, o
 	return taskRules, nil
 }
 
+// Jobs is the resolver for the jobs field.
+func (r *taskResolver) Jobs(ctx context.Context, obj *models.Task, limit int, offset int, reverseOrder bool) ([]models.Job, error) {
+	if limit <= 0 {
+		return nil, consts.ErrLimitEmpty
+	}
+
+	var jobs []models.Job
+	result := database.GetDatabase().
+		Where("task_id = ?", obj.ID).
+		Limit(limit).
+		Offset(offset)
+
+	// reverse order by ID by default (i.e. view recent data)
+	if reverseOrder {
+		result.Order("id desc")
+	}
+
+	result.Find(&jobs)
+	if err := result.Error; err != nil {
+		return nil, err
+	}
+	return jobs, nil
+}
+
 // LastRunningAt is the resolver for the last_running_at field.
 func (r *taskResolver) LastRunningAt(ctx context.Context, obj *models.Task) (int64, error) {
 	return gog.If(

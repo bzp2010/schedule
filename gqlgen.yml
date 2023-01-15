@@ -69,3 +69,9 @@ models:
     fields:
       task:
         resolver: true
+  Job:
+    fields:
+      task:
+        resolver: true
+      task_rule:
+        resolver: true
