@@ -9,10 +9,12 @@ import (
 	"fmt"
 	"strconv"
 	"sync"
+	"sync/atomic"
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
 	"github.com/bzp2010/schedule/internal/database/models"
+	models1 "github.com/bzp2010/schedule/internal/handler/graphql/models"
 	gqlparser "github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
 )
@@ -46,7 +48,7 @@ type DirectiveRoot struct {
 type ComplexityRoot struct {
 	Query struct {
 		Task  func(childComplexity int, id int64) int
-		Tasks func(childComplexity int, limit *int, offset *int) int
+		Tasks func(childComplexity int, limit int, offset int) int
 	}
 
 	Task struct {
@@ -56,7 +58,7 @@ type ComplexityRoot struct {
 		LastRunningAt   func(childComplexity int) int
 		LastRunningTime func(childComplexity int) int
 		Name            func(childComplexity int) int
-		Rules           func(childComplexity int, limit *int, offset *int) int
+		Rules           func(childComplexity int, limit int, offset int) int
 		Status          func(childComplexity int) int
 		Type            func(childComplexity int) int
 		UpdatedAt       func(childComplexity int) int
@@ -71,36 +73,34 @@ type ComplexityRoot struct {
 		Rule            func(childComplexity int) int
 		Status          func(childComplexity int) int
 		Task            func(childComplexity int) int
-		TaskID          func(childComplexity int) int
 		UpdatedAt       func(childComplexity int) int
 	}
 }
 
 type QueryResolver interface {
 	Task(ctx context.Context, id int64) (*models.Task, error)
-	Tasks(ctx context.Context, limit *int, offset *int) ([]*models.Task, error)
+	Tasks(ctx context.Context, limit int, offset int) ([]models.Task, error)
 }
 type TaskResolver interface {
-	ID(ctx context.Context, obj *models.Task) (*int64, error)
+	ID(ctx context.Context, obj *models.Task) (int64, error)
 
-	Type(ctx context.Context, obj *models.Task) (*models.TaskType, error)
-	Configuration(ctx context.Context, obj *models.Task) (*string, error)
-	Rules(ctx context.Context, obj *models.Task, limit *int, offset *int) ([]*models.TaskRule, error)
-	LastRunningAt(ctx context.Context, obj *models.Task) (*int64, error)
+	Type(ctx context.Context, obj *models.Task) (models.TaskType, error)
+	Configuration(ctx context.Context, obj *models.Task) (string, error)
+	Rules(ctx context.Context, obj *models.Task, limit int, offset int) ([]models.TaskRule, error)
+	LastRunningAt(ctx context.Context, obj *models.Task) (int64, error)
 
-	CreatedAt(ctx context.Context, obj *models.Task) (*int64, error)
-	UpdatedAt(ctx context.Context, obj *models.Task) (*int64, error)
+	CreatedAt(ctx context.Context, obj *models.Task) (int64, error)
+	UpdatedAt(ctx context.Context, obj *models.Task) (int64, error)
 }
 type TaskRuleResolver interface {
-	ID(ctx context.Context, obj *models.TaskRule) (*int64, error)
-	TaskID(ctx context.Context, obj *models.TaskRule) (*int64, error)
+	ID(ctx context.Context, obj *models.TaskRule) (int64, error)
 	Task(ctx context.Context, obj *models.TaskRule) (*models.Task, error)
-	Description(ctx context.Context, obj *models.TaskRule) (*string, error)
+	Description(ctx context.Context, obj *models.TaskRule) (string, error)
 
-	LastRunningAt(ctx context.Context, obj *models.TaskRule) (*int64, error)
+	LastRunningAt(ctx context.Context, obj *models.TaskRule) (int64, error)
 
-	CreatedAt(ctx context.Context, obj *models.TaskRule) (*int64, error)
-	UpdatedAt(ctx context.Context, obj *models.TaskRule) (*int64, error)
+	CreatedAt(ctx context.Context, obj *models.TaskRule) (int64, error)
+	UpdatedAt(ctx context.Context, obj *models.TaskRule) (int64, error)
 }
 
 type executableSchema struct {
@@ -140,7 +140,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.Tasks(childComplexity, args["limit"].(*int), args["offset"].(*int)), true
+		return e.complexity.Query.Tasks(childComplexity, args["limit"].(int), args["offset"].(int)), true
 
 	case "Task.configuration":
 		if e.complexity.Task.Configuration == nil {
@@ -194,7 +194,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Task.Rules(childComplexity, args["limit"].(*int), args["offset"].(*int)), true
+		return e.complexity.Task.Rules(childComplexity, args["limit"].(int), args["offset"].(int)), true
 
 	case "Task.status":
 		if e.complexity.Task.Status == nil {
@@ -273,13 +273,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.TaskRule.Task(childComplexity), true
 
-	case "TaskRule.task_id":
-		if e.complexity.TaskRule.TaskID == nil {
-			break
-		}
-
-		return e.complexity.TaskRule.TaskID(childComplexity), true
-
 	case "TaskRule.updated_at":
 		if e.complexity.TaskRule.UpdatedAt == nil {
 			break
@@ -348,7 +341,13 @@ enum Status {
 
 type Query {
     task(id: ID!): Task
-    tasks(limit: Int = 10, offset: Int = 0): [Task]
+    tasks(limit: Int! = 10, offset: Int! = 0): [Task!]!
+}
+
+interface Model {
+    id: ID!
+    created_at: Int64!
+    updated_at: Int64!
 }
 `, BuiltIn: false},
 	{Name: "../schema/task.graphql", Input: `enum TaskType {
@@ -362,90 +361,86 @@ type Query {
     WEBHOOK
 }
 
-type Task {
+type Task implements Model {
     """
     Task ID
     """
-    id: ID
+    id: ID!
     """
     Task name
     """
-    name: String
+    name: String!
     """
     Task type (SHELL, WEBHOOK)
     """
-    type: TaskType
+    type: TaskType!
     """
     Task configuration in JSON
     """
-    configuration: String
+    configuration: String!
     """
     Rules of the task
     """
-    rules(limit: Int = 10, offset: Int = 0): [TaskRule]
+    rules(limit: Int! = 10, offset: Int! = 0): [TaskRule!]!
     """
     Last execution moment of the task
     """
-    last_running_at: Int64
+    last_running_at: Int64!
     """
     Last execution time of the task
     """
-    last_running_time: Int64
+    last_running_time: Int64!
     """
     Create time of the task
     """
-    created_at: Int64
+    created_at: Int64!
     """
     Last update time of the task
     """
-    updated_at: Int64
+    updated_at: Int64!
     """
     Status of the task
     """
-    status: Status
+    status: Status!
 }
 `, BuiltIn: false},
-	{Name: "../schema/task_rule.graphql", Input: `type TaskRule {
+	{Name: "../schema/task_rule.graphql", Input: `type TaskRule implements Model {
     """
     Task rule ID
     """
-    id: ID
-    """
-    Task ID associated with the rule
-    """
-    task_id: ID
+    id: ID!
     """
     Task associated with the rule
     """
-    task: Task
+    task: Task!
     """
     Task rule description
     """
-    description: String
+    description: String!
     """
     Task rule definition (in quartz format)
     """
-    rule: String
+    rule: String!
     """
     Last execution moment of the task
     """
-    last_running_at: Int64
+    last_running_at: Int64!
     """
     Last execution time of the task
     """
-    last_running_time: Int64
+    last_running_time: Int64!
     """
     Create time of the task
     """
-    created_at: Int64
+    created_at: Int64!
     """
     Last update time of the task
     """
-    updated_at: Int64
+    updated_at: Int64!
     """
     Status of the task
     """
-    status: Status
+    status: Status!
 }
 `, BuiltIn: false},
 }
@@ -488,19 +483,19 @@ func (ec *executionContext) field_Query_task_args(ctx context.Context, rawArgs m
 func (ec *executionContext) field_Query_tasks_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 *int
+	var arg0 int
 	if tmp, ok := rawArgs["limit"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("limit"))
-		arg0, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
 	args["limit"] = arg0
-	var arg1 *int
+	var arg1 int
 	if tmp, ok := rawArgs["offset"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("offset"))
-		arg1, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		arg1, err = ec.unmarshalNInt2int(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -512,19 +507,19 @@ func (ec *executionContext) field_Query_tasks_args(ctx context.Context, rawArgs 
 func (ec *executionContext) field_Task_rules_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 *int
+	var arg0 int
 	if tmp, ok := rawArgs["limit"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("limit"))
-		arg0, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
 	args["limit"] = arg0
-	var arg1 *int
+	var arg1 int
 	if tmp, ok := rawArgs["offset"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("offset"))
-		arg1, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		arg1, err = ec.unmarshalNInt2int(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -659,18 +654,21 @@ func (ec *executionContext) _Query_tasks(ctx context.Context, field graphql.Coll
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Tasks(rctx, fc.Args["limit"].(*int), fc.Args["offset"].(*int))
+		return ec.resolvers.Query().Tasks(rctx, fc.Args["limit"].(int), fc.Args["offset"].(int))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
-	res := resTmp.([]*models.Task)
+	res := resTmp.([]models.Task)
 	fc.Result = res
-	return ec.marshalOTask2ᚕᚖgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTask(ctx, field.Selections, res)
+	return ec.marshalNTask2ᚕgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTaskᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_tasks(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -869,11 +867,14 @@ func (ec *executionContext) _Task_id(ctx context.Context, field graphql.Collecte
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
-	res := resTmp.(*int64)
+	res := resTmp.(int64)
 	fc.Result = res
-	return ec.marshalOID2ᚖint64(ctx, field.Selections, res)
+	return ec.marshalNID2int64(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Task_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -910,11 +911,14 @@ func (ec *executionContext) _Task_name(ctx context.Context, field graphql.Collec
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
 	res := resTmp.(string)
 	fc.Result = res
-	return ec.marshalOString2string(ctx, field.Selections, res)
+	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Task_name(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -951,11 +955,14 @@ func (ec *executionContext) _Task_type(ctx context.Context, field graphql.Collec
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
-	res := resTmp.(*models.TaskType)
+	res := resTmp.(models.TaskType)
 	fc.Result = res
-	return ec.marshalOTaskType2ᚖgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTaskType(ctx, field.Selections, res)
+	return ec.marshalNTaskType2githubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTaskType(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Task_type(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -992,11 +999,14 @@ func (ec *executionContext) _Task_configuration(ctx context.Context, field graph
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
-	res := resTmp.(*string)
+	res := resTmp.(string)
 	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Task_configuration(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -1026,18 +1036,21 @@ func (ec *executionContext) _Task_rules(ctx context.Context, field graphql.Colle
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Task().Rules(rctx, obj, fc.Args["limit"].(*int), fc.Args["offset"].(*int))
+		return ec.resolvers.Task().Rules(rctx, obj, fc.Args["limit"].(int), fc.Args["offset"].(int))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
-	res := resTmp.([]*models.TaskRule)
+	res := resTmp.([]models.TaskRule)
 	fc.Result = res
-	return ec.marshalOTaskRule2ᚕᚖgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTaskRule(ctx, field.Selections, res)
+	return ec.marshalNTaskRule2ᚕgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTaskRuleᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Task_rules(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -1050,8 +1063,6 @@ func (ec *executionContext) fieldContext_Task_rules(ctx context.Context, field g
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_TaskRule_id(ctx, field)
-			case "task_id":
-				return ec.fieldContext_TaskRule_task_id(ctx, field)
 			case "task":
 				return ec.fieldContext_TaskRule_task(ctx, field)
 			case "description":
@@ -1107,11 +1118,14 @@ func (ec *executionContext) _Task_last_running_at(ctx context.Context, field gra
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
-	res := resTmp.(*int64)
+	res := resTmp.(int64)
 	fc.Result = res
-	return ec.marshalOInt642ᚖint64(ctx, field.Selections, res)
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Task_last_running_at(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -1148,11 +1162,14 @@ func (ec *executionContext) _Task_last_running_time(ctx context.Context, field g
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
 	res := resTmp.(int64)
 	fc.Result = res
-	return ec.marshalOInt642int64(ctx, field.Selections, res)
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Task_last_running_time(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -1189,11 +1206,14 @@ func (ec *executionContext) _Task_created_at(ctx context.Context, field graphql.
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
-	res := resTmp.(*int64)
+	res := resTmp.(int64)
 	fc.Result = res
-	return ec.marshalOInt642ᚖint64(ctx, field.Selections, res)
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Task_created_at(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -1230,11 +1250,14 @@ func (ec *executionContext) _Task_updated_at(ctx context.Context, field graphql.
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
-	res := resTmp.(*int64)
+	res := resTmp.(int64)
 	fc.Result = res
-	return ec.marshalOInt642ᚖint64(ctx, field.Selections, res)
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Task_updated_at(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -1271,11 +1294,14 @@ func (ec *executionContext) _Task_status(ctx context.Context, field graphql.Coll
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
 	res := resTmp.(models.Status)
 	fc.Result = res
-	return ec.marshalOStatus2githubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐStatus(ctx, field.Selections, res)
+	return ec.marshalNStatus2githubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐStatus(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Task_status(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -1312,55 +1338,17 @@ func (ec *executionContext) _TaskRule_id(ctx context.Context, field graphql.Coll
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
-	res := resTmp.(*int64)
+	res := resTmp.(int64)
 	fc.Result = res
-	return ec.marshalOID2ᚖint64(ctx, field.Selections, res)
+	return ec.marshalNID2int64(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_TaskRule_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "TaskRule",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type ID does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _TaskRule_task_id(ctx context.Context, field graphql.CollectedField, obj *models.TaskRule) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_TaskRule_task_id(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.TaskRule().TaskID(rctx, obj)
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*int64)
-	fc.Result = res
-	return ec.marshalOID2ᚖint64(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_TaskRule_task_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "TaskRule",
 		Field:      field,
@@ -1394,11 +1382,14 @@ func (ec *executionContext) _TaskRule_task(ctx context.Context, field graphql.Co
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
 	res := resTmp.(*models.Task)
 	fc.Result = res
-	return ec.marshalOTask2ᚖgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTask(ctx, field.Selections, res)
+	return ec.marshalNTask2ᚖgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTask(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_TaskRule_task(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -1457,11 +1448,14 @@ func (ec *executionContext) _TaskRule_description(ctx context.Context, field gra
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
-	res := resTmp.(*string)
+	res := resTmp.(string)
 	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_TaskRule_description(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -1498,11 +1492,14 @@ func (ec *executionContext) _TaskRule_rule(ctx context.Context, field graphql.Co
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
 	res := resTmp.(string)
 	fc.Result = res
-	return ec.marshalOString2string(ctx, field.Selections, res)
+	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_TaskRule_rule(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -1539,11 +1536,14 @@ func (ec *executionContext) _TaskRule_last_running_at(ctx context.Context, field
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
-	res := resTmp.(*int64)
+	res := resTmp.(int64)
 	fc.Result = res
-	return ec.marshalOInt642ᚖint64(ctx, field.Selections, res)
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_TaskRule_last_running_at(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -1580,11 +1580,14 @@ func (ec *executionContext) _TaskRule_last_running_time(ctx context.Context, fie
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
 	res := resTmp.(int64)
 	fc.Result = res
-	return ec.marshalOInt642int64(ctx, field.Selections, res)
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_TaskRule_last_running_time(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -1621,11 +1624,14 @@ func (ec *executionContext) _TaskRule_created_at(ctx context.Context, field grap
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
-	res := resTmp.(*int64)
+	res := resTmp.(int64)
 	fc.Result = res
-	return ec.marshalOInt642ᚖint64(ctx, field.Selections, res)
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_TaskRule_created_at(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -1662,11 +1668,14 @@ func (ec *executionContext) _TaskRule_updated_at(ctx context.Context, field grap
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
-	res := resTmp.(*int64)
+	res := resTmp.(int64)
 	fc.Result = res
-	return ec.marshalOInt642ᚖint64(ctx, field.Selections, res)
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_TaskRule_updated_at(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -1703,11 +1712,14 @@ func (ec *executionContext) _TaskRule_status(ctx context.Context, field graphql.
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
 	res := resTmp.(models.Status)
 	fc.Result = res
-	return ec.marshalOStatus2githubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐStatus(ctx, field.Selections, res)
+	return ec.marshalNStatus2githubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐStatus(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_TaskRule_status(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -3500,6 +3512,29 @@ func (ec *executionContext) fieldContext___Type_specifiedByURL(ctx context.Conte
 
 // region    ************************** interface.gotpl ***************************
 
+func (ec *executionContext) _Model(ctx context.Context, sel ast.SelectionSet, obj models1.Model) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case models.Task:
+		return ec._Task(ctx, sel, &obj)
+	case *models.Task:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._Task(ctx, sel, obj)
+	case models.TaskRule:
+		return ec._TaskRule(ctx, sel, &obj)
+	case *models.TaskRule:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._TaskRule(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
 // endregion ************************** interface.gotpl ***************************
 
 // region    **************************** object.gotpl ****************************
@@ -3553,6 +3588,9 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_tasks(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
 				return res
 			}
 
@@ -3586,7 +3624,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 	return out
 }
 
-var taskImplementors = []string{"Task"}
+var taskImplementors = []string{"Task", "Model"}
 
 func (ec *executionContext) _Task(ctx context.Context, sel ast.SelectionSet, obj *models.Task) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, taskImplementors)
@@ -3606,6 +3644,9 @@ func (ec *executionContext) _Task(ctx context.Context, sel ast.SelectionSet, obj
 					}
 				}()
 				res = ec._Task_id(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
 				return res
 			}
 
@@ -3617,6 +3658,9 @@ func (ec *executionContext) _Task(ctx context.Context, sel ast.SelectionSet, obj
 
 			out.Values[i] = ec._Task_name(ctx, field, obj)
 
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
 		case "type":
 			field := field
 
@@ -3627,6 +3671,9 @@ func (ec *executionContext) _Task(ctx context.Context, sel ast.SelectionSet, obj
 					}
 				}()
 				res = ec._Task_type(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
 				return res
 			}
 
@@ -3644,6 +3691,9 @@ func (ec *executionContext) _Task(ctx context.Context, sel ast.SelectionSet, obj
 					}
 				}()
 				res = ec._Task_configuration(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
 				return res
 			}
 
@@ -3661,6 +3711,9 @@ func (ec *executionContext) _Task(ctx context.Context, sel ast.SelectionSet, obj
 					}
 				}()
 				res = ec._Task_rules(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
 				return res
 			}
 
@@ -3678,6 +3731,9 @@ func (ec *executionContext) _Task(ctx context.Context, sel ast.SelectionSet, obj
 					}
 				}()
 				res = ec._Task_last_running_at(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
 				return res
 			}
 
@@ -3689,6 +3745,9 @@ func (ec *executionContext) _Task(ctx context.Context, sel ast.SelectionSet, obj
 
 			out.Values[i] = ec._Task_last_running_time(ctx, field, obj)
 
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
 		case "created_at":
 			field := field
 
@@ -3699,6 +3758,9 @@ func (ec *executionContext) _Task(ctx context.Context, sel ast.SelectionSet, obj
 					}
 				}()
 				res = ec._Task_created_at(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
 				return res
 			}
 
@@ -3716,6 +3778,9 @@ func (ec *executionContext) _Task(ctx context.Context, sel ast.SelectionSet, obj
 					}
 				}()
 				res = ec._Task_updated_at(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
 				return res
 			}
 
@@ -3727,6 +3792,9 @@ func (ec *executionContext) _Task(ctx context.Context, sel ast.SelectionSet, obj
 
 			out.Values[i] = ec._Task_status(ctx, field, obj)
 
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -3738,7 +3806,7 @@ func (ec *executionContext) _Task(ctx context.Context, sel ast.SelectionSet, obj
 	return out
 }
 
-var taskRuleImplementors = []string{"TaskRule"}
+var taskRuleImplementors = []string{"TaskRule", "Model"}
 
 func (ec *executionContext) _TaskRule(ctx context.Context, sel ast.SelectionSet, obj *models.TaskRule) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, taskRuleImplementors)
@@ -3758,23 +3826,9 @@ func (ec *executionContext) _TaskRule(ctx context.Context, sel ast.SelectionSet,
 					}
 				}()
 				res = ec._TaskRule_id(ctx, field, obj)
-				return res
-			}
-
-			out.Concurrently(i, func() graphql.Marshaler {
-				return innerFunc(ctx)
-
-			})
-		case "task_id":
-			field := field
-
-			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._TaskRule_task_id(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
 				return res
 			}
 
@@ -3792,6 +3846,9 @@ func (ec *executionContext) _TaskRule(ctx context.Context, sel ast.SelectionSet,
 					}
 				}()
 				res = ec._TaskRule_task(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
 				return res
 			}
 
@@ -3809,6 +3866,9 @@ func (ec *executionContext) _TaskRule(ctx context.Context, sel ast.SelectionSet,
 					}
 				}()
 				res = ec._TaskRule_description(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
 				return res
 			}
 
@@ -3820,6 +3880,9 @@ func (ec *executionContext) _TaskRule(ctx context.Context, sel ast.SelectionSet,
 
 			out.Values[i] = ec._TaskRule_rule(ctx, field, obj)
 
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
 		case "last_running_at":
 			field := field
 
@@ -3830,6 +3893,9 @@ func (ec *executionContext) _TaskRule(ctx context.Context, sel ast.SelectionSet,
 					}
 				}()
 				res = ec._TaskRule_last_running_at(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
 				return res
 			}
 
@@ -3841,6 +3907,9 @@ func (ec *executionContext) _TaskRule(ctx context.Context, sel ast.SelectionSet,
 
 			out.Values[i] = ec._TaskRule_last_running_time(ctx, field, obj)
 
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
 		case "created_at":
 			field := field
 
@@ -3851,6 +3920,9 @@ func (ec *executionContext) _TaskRule(ctx context.Context, sel ast.SelectionSet,
 					}
 				}()
 				res = ec._TaskRule_created_at(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
 				return res
 			}
 
@@ -3868,6 +3940,9 @@ func (ec *executionContext) _TaskRule(ctx context.Context, sel ast.SelectionSet,
 					}
 				}()
 				res = ec._TaskRule_updated_at(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
 				return res
 			}
 
@@ -3879,6 +3954,9 @@ func (ec *executionContext) _TaskRule(ctx context.Context, sel ast.SelectionSet,
 
 			out.Values[i] = ec._TaskRule_status(ctx, field, obj)
 
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -4238,6 +4316,46 @@ func (ec *executionContext) marshalNID2int64(ctx context.Context, sel ast.Select
 	return res
 }
 
+func (ec *executionContext) unmarshalNInt2int(ctx context.Context, v interface{}) (int, error) {
+	res, err := graphql.UnmarshalInt(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.SelectionSet, v int) graphql.Marshaler {
+	res := graphql.MarshalInt(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
+}
+
+func (ec *executionContext) unmarshalNInt642int64(ctx context.Context, v interface{}) (int64, error) {
+	res, err := graphql.UnmarshalInt64(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNInt642int64(ctx context.Context, sel ast.SelectionSet, v int64) graphql.Marshaler {
+	res := graphql.MarshalInt64(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
+}
+
+func (ec *executionContext) unmarshalNStatus2githubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐStatus(ctx context.Context, v interface{}) (models.Status, error) {
+	var res models.Status
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNStatus2githubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐStatus(ctx context.Context, sel ast.SelectionSet, v models.Status) graphql.Marshaler {
+	return v
+}
+
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v interface{}) (string, error) {
 	res, err := graphql.UnmarshalString(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -4245,6 +4363,128 @@ func (ec *executionContext) unmarshalNString2string(ctx context.Context, v inter
 
 func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
 	res := graphql.MarshalString(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
+}
+
+func (ec *executionContext) marshalNTask2githubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTask(ctx context.Context, sel ast.SelectionSet, v models.Task) graphql.Marshaler {
+	return ec._Task(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNTask2ᚕgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTaskᚄ(ctx context.Context, sel ast.SelectionSet, v []models.Task) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNTask2githubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTask(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNTask2ᚖgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTask(ctx context.Context, sel ast.SelectionSet, v *models.Task) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._Task(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNTaskRule2githubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTaskRule(ctx context.Context, sel ast.SelectionSet, v models.TaskRule) graphql.Marshaler {
+	return ec._TaskRule(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNTaskRule2ᚕgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTaskRuleᚄ(ctx context.Context, sel ast.SelectionSet, v []models.TaskRule) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNTaskRule2githubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTaskRule(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) unmarshalNTaskType2githubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTaskType(ctx context.Context, v interface{}) (models.TaskType, error) {
+	tmp, err := graphql.UnmarshalString(v)
+	res := models.TaskType(tmp)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNTaskType2githubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTaskType(ctx context.Context, sel ast.SelectionSet, v models.TaskType) graphql.Marshaler {
+	res := graphql.MarshalString(string(v))
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -4532,84 +4772,6 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	return res
 }
 
-func (ec *executionContext) unmarshalOID2ᚖint64(ctx context.Context, v interface{}) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	res, err := graphql.UnmarshalInt64(v)
-	return &res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalOID2ᚖint64(ctx context.Context, sel ast.SelectionSet, v *int64) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	res := graphql.MarshalInt64(*v)
-	return res
-}
-
-func (ec *executionContext) unmarshalOInt2ᚖint(ctx context.Context, v interface{}) (*int, error) {
-	if v == nil {
-		return nil, nil
-	}
-	res, err := graphql.UnmarshalInt(v)
-	return &res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.SelectionSet, v *int) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	res := graphql.MarshalInt(*v)
-	return res
-}
-
-func (ec *executionContext) unmarshalOInt642int64(ctx context.Context, v interface{}) (int64, error) {
-	res, err := graphql.UnmarshalInt64(v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalOInt642int64(ctx context.Context, sel ast.SelectionSet, v int64) graphql.Marshaler {
-	res := graphql.MarshalInt64(v)
-	return res
-}
-
-func (ec *executionContext) unmarshalOInt642ᚖint64(ctx context.Context, v interface{}) (*int64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	res, err := graphql.UnmarshalInt64(v)
-	return &res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalOInt642ᚖint64(ctx context.Context, sel ast.SelectionSet, v *int64) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	res := graphql.MarshalInt64(*v)
-	return res
-}
-
-func (ec *executionContext) unmarshalOStatus2githubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐStatus(ctx context.Context, v interface{}) (models.Status, error) {
-	var res models.Status
-	err := res.UnmarshalGQL(v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalOStatus2githubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐStatus(ctx context.Context, sel ast.SelectionSet, v models.Status) graphql.Marshaler {
-	return v
-}
-
-func (ec *executionContext) unmarshalOString2string(ctx context.Context, v interface{}) (string, error) {
-	res, err := graphql.UnmarshalString(v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalOString2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
-	res := graphql.MarshalString(v)
-	return res
-}
-
 func (ec *executionContext) unmarshalOString2ᚖstring(ctx context.Context, v interface{}) (*string, error) {
 	if v == nil {
 		return nil, nil
@@ -4626,117 +4788,11 @@ func (ec *executionContext) marshalOString2ᚖstring(ctx context.Context, sel as
 	return res
 }
 
-func (ec *executionContext) marshalOTask2ᚕᚖgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTask(ctx context.Context, sel ast.SelectionSet, v []*models.Task) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalOTask2ᚖgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTask(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
-
-	return ret
-}
-
 func (ec *executionContext) marshalOTask2ᚖgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTask(ctx context.Context, sel ast.SelectionSet, v *models.Task) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._Task(ctx, sel, v)
-}
-
-func (ec *executionContext) marshalOTaskRule2ᚕᚖgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTaskRule(ctx context.Context, sel ast.SelectionSet, v []*models.TaskRule) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalOTaskRule2ᚖgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTaskRule(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
-
-	return ret
-}
-
-func (ec *executionContext) marshalOTaskRule2ᚖgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTaskRule(ctx context.Context, sel ast.SelectionSet, v *models.TaskRule) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._TaskRule(ctx, sel, v)
-}
-
-func (ec *executionContext) unmarshalOTaskType2ᚖgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTaskType(ctx context.Context, v interface{}) (*models.TaskType, error) {
-	if v == nil {
-		return nil, nil
-	}
-	tmp, err := graphql.UnmarshalString(v)
-	res := models.TaskType(tmp)
-	return &res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalOTaskType2ᚖgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTaskType(ctx context.Context, sel ast.SelectionSet, v *models.TaskType) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	res := graphql.MarshalString(string(*v))
-	return res
 }
 
 func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.EnumValue) graphql.Marshaler {

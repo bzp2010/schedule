@@ -14,13 +14,8 @@ import (
 )
 
 // ID is the resolver for the id field.
-func (r *taskRuleResolver) ID(ctx context.Context, obj *models.TaskRule) (*int64, error) {
-	return gog.Ptr(int64(obj.ID)), nil
-}
-
-// TaskID is the resolver for the task_id field.
-func (r *taskRuleResolver) TaskID(ctx context.Context, obj *models.TaskRule) (*int64, error) {
-	return gog.Ptr(int64(obj.TaskID)), nil
+func (r *taskRuleResolver) ID(ctx context.Context, obj *models.TaskRule) (int64, error) {
+	return obj.GetID(), nil
 }
 
 // Task is the resolver for the task field.
@@ -34,35 +29,31 @@ func (r *taskRuleResolver) Task(ctx context.Context, obj *models.TaskRule) (*mod
 }
 
 // Description is the resolver for the description field.
-func (r *taskRuleResolver) Description(ctx context.Context, obj *models.TaskRule) (*string, error) {
-	return gog.Ptr(
-		gog.If(
-			obj.Description.Valid,
-			obj.Description.String,
-			"",
-		),
+func (r *taskRuleResolver) Description(ctx context.Context, obj *models.TaskRule) (string, error) {
+	return gog.If(
+		obj.Description.Valid,
+		obj.Description.String,
+		"",
 	), nil
 }
 
 // LastRunningAt is the resolver for the last_running_at field.
-func (r *taskRuleResolver) LastRunningAt(ctx context.Context, obj *models.TaskRule) (*int64, error) {
-	return gog.Ptr(
-		gog.If(
-			obj.LastRunningAt.Valid,
-			obj.LastRunningAt.Time.UnixMilli(),
-			int64(0),
-		),
+func (r *taskRuleResolver) LastRunningAt(ctx context.Context, obj *models.TaskRule) (int64, error) {
+	return gog.If(
+		obj.LastRunningAt.Valid,
+		obj.LastRunningAt.Time.UnixMilli(),
+		int64(0),
 	), nil
 }
 
 // CreatedAt is the resolver for the created_at field.
-func (r *taskRuleResolver) CreatedAt(ctx context.Context, obj *models.TaskRule) (*int64, error) {
-	return gog.Ptr(obj.CreatedAt.UnixMilli()), nil
+func (r *taskRuleResolver) CreatedAt(ctx context.Context, obj *models.TaskRule) (int64, error) {
+	return obj.GetCreatedAt(), nil
 }
 
 // UpdatedAt is the resolver for the updated_at field.
-func (r *taskRuleResolver) UpdatedAt(ctx context.Context, obj *models.TaskRule) (*int64, error) {
-	return gog.Ptr(obj.UpdatedAt.UnixMilli()), nil
+func (r *taskRuleResolver) UpdatedAt(ctx context.Context, obj *models.TaskRule) (int64, error) {
+	return obj.GetUpdatedAt(), nil
 }
 
 // TaskRule returns generated.TaskRuleResolver implementation.

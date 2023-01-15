@@ -32,3 +32,19 @@ type TaskRule struct {
 	// Status indicates the current task rule status
 	Status Status
 }
+
+// Implement GraphQL's models.Model interface to simplify data assembly,
+// the data corresponding to models.Model is gorm.Model
+func (tr TaskRule) IsModel() {}
+
+func (tr TaskRule) GetID() int64 {
+	return int64(tr.ID)
+}
+
+func (tr TaskRule) GetCreatedAt() int64 {
+	return tr.CreatedAt.UnixMilli()
+}
+
+func (tr TaskRule) GetUpdatedAt() int64 {
+	return tr.UpdatedAt.UnixMilli()
+}

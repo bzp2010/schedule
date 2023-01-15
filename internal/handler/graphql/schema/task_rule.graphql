@@ -1,42 +1,38 @@
-type TaskRule {
+type TaskRule implements Model {
     """
     Task rule ID
     """
-    id: ID
-    """
-    Task ID associated with the rule
-    """
-    task_id: ID
+    id: ID!
     """
     Task associated with the rule
     """
-    task: Task
+    task: Task!
     """
     Task rule description
     """
-    description: String
+    description: String!
     """
     Task rule definition (in quartz format)
     """
-    rule: String
+    rule: String!
     """
     Last execution moment of the task
     """
-    last_running_at: Int64
+    last_running_at: Int64!
     """
     Last execution time of the task
     """
-    last_running_time: Int64
+    last_running_time: Int64!
     """
     Create time of the task
     """
-    created_at: Int64
+    created_at: Int64!
     """
     Last update time of the task
     """
-    updated_at: Int64
+    updated_at: Int64!
     """
     Status of the task
     """
-    status: Status
+    status: Status!
 }

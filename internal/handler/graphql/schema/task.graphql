@@ -9,45 +9,45 @@ enum TaskType {
     WEBHOOK
 }
 
-type Task {
+type Task implements Model {
     """
     Task ID
     """
-    id: ID
+    id: ID!
     """
     Task name
     """
-    name: String
+    name: String!
     """
     Task type (SHELL, WEBHOOK)
     """
-    type: TaskType
+    type: TaskType!
     """
     Task configuration in JSON
     """
-    configuration: String
+    configuration: String!
     """
     Rules of the task
     """
-    rules(limit: Int = 10, offset: Int = 0): [TaskRule]
+    rules(limit: Int! = 10, offset: Int! = 0): [TaskRule!]!
     """
     Last execution moment of the task
     """
-    last_running_at: Int64
+    last_running_at: Int64!
     """
     Last execution time of the task
     """
-    last_running_time: Int64
+    last_running_time: Int64!
     """
     Create time of the task
     """
-    created_at: Int64
+    created_at: Int64!
     """
     Last update time of the task
     """
-    updated_at: Int64
+    updated_at: Int64!
     """
     Status of the task
     """
-    status: Status
+    status: Status!
 }

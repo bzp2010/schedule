@@ -50,3 +50,19 @@ type TaskConfigurationShell struct {
 	Command string `json:"command"`
 	Timeout time.Duration
 }
+
+// Implement GraphQL's models.Model interface to simplify data assembly,
+// the data corresponding to models.Model is gorm.Model
+func (t Task) IsModel() {}
+
+func (t Task) GetID() int64 {
+	return int64(t.ID)
+}
+
+func (t Task) GetCreatedAt() int64 {
+	return t.CreatedAt.UnixMilli()
+}
+
+func (t Task) GetUpdatedAt() int64 {
+	return t.UpdatedAt.UnixMilli()
+}

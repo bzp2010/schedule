@@ -10,6 +10,7 @@ import (
 
 	"github.com/bzp2010/schedule/internal/database"
 	"github.com/bzp2010/schedule/internal/database/models"
+	"github.com/bzp2010/schedule/internal/handler/graphql/consts"
 	"github.com/bzp2010/schedule/internal/handler/graphql/generated"
 )
 
@@ -27,9 +28,13 @@ func (r *queryResolver) Task(ctx context.Context, id int64) (*models.Task, error
 }
 
 // Tasks is the resolver for the tasks field.
-func (r *queryResolver) Tasks(ctx context.Context, limit *int, offset *int) ([]*models.Task, error) {
-	var tasks []*models.Task
-	result := database.GetDatabase().Offset(*offset).Limit(*limit).Find(&tasks)
+func (r *queryResolver) Tasks(ctx context.Context, limit int, offset int) ([]models.Task, error) {
+	if limit <= 0 {
+		return nil, consts.ErrLimitEmpty
+	}
+
+	var tasks []models.Task
+	result := database.GetDatabase().Offset(offset).Limit(limit).Find(&tasks)
 	if err := result.Error; err != nil {
 		return nil, err
 	}

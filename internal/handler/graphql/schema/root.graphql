@@ -7,5 +7,11 @@ enum Status {
 
 type Query {
     task(id: ID!): Task
-    tasks(limit: Int = 10, offset: Int = 0): [Task]
+    tasks(limit: Int! = 10, offset: Int! = 0): [Task!]!
+}
+
+interface Model {
+    id: ID!
+    created_at: Int64!
+    updated_at: Int64!
 }
