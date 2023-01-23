@@ -1,5 +1,15 @@
 scalar Int64
 
+directive @goModel(model: String, models: [String!]) on OBJECT
+    | INPUT_OBJECT
+    | SCALAR
+    | ENUM
+    | INTERFACE
+    | UNION
+
+directive @goField(forceResolver: Boolean, name: String) on INPUT_FIELD_DEFINITION
+    | FIELD_DEFINITION
+
 enum Status {
     ENABLED
     DISABLED
@@ -10,6 +20,10 @@ type Query {
     tasks(limit: Int! = 10, offset: Int! = 0): [Task!]!
     job(id: ID!): Job
     jobs(limit: Int! = 10, offset: Int! = 0, reverse_order: Boolean! = true): [Job!]!
+}
+
+type Mutation {
+    createTask(input: CreateTask!): Task!
 }
 
 interface Model {

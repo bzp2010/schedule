@@ -85,3 +85,38 @@ type Task implements Model {
     """
     status: Status!
 }
+
+"""
+TaskConfigurationShell is the configuration input for shell type tasks
+"""
+input InputTaskConfigurationShell @goModel(model: "github.com/bzp2010/schedule/internal/database/models.TaskConfigurationShell") {
+    command: String!
+    timeout: Int64!
+}
+
+"""
+InputTaskConfigurationWebhook is the configuration input for webhook type tasks
+"""
+input InputTaskConfigurationWebhook @goModel(model: "github.com/bzp2010/schedule/internal/database/models.TaskConfigurationWebhook") {
+    url: String!
+    method: HTTPMethod!
+}
+
+"""
+InputTaskConfiguration is a collection type of InputTaskConfigurationShell and InputTaskConfigurationWebhook,
+which is an alternative to the temporarily unsupported inputUnion
+"""
+input InputTaskConfiguration {
+    shell: InputTaskConfigurationShell
+    webhook: InputTaskConfigurationWebhook
+}
+
+"""
+CreateTask is the data structure used by mutation of create Task
+"""
+input CreateTask {
+    name: String!
+    type: TaskType!
+    configuration: InputTaskConfiguration!
+    status: Status
+}
