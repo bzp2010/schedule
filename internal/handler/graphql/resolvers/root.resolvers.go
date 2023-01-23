@@ -6,13 +6,66 @@ package resolvers
 
 import (
 	"context"
+	"database/sql"
+	"encoding/json"
 	"fmt"
 
 	"github.com/bzp2010/schedule/internal/database"
 	"github.com/bzp2010/schedule/internal/database/models"
 	"github.com/bzp2010/schedule/internal/handler/graphql/consts"
 	"github.com/bzp2010/schedule/internal/handler/graphql/generated"
+	models1 "github.com/bzp2010/schedule/internal/handler/graphql/models"
+	"github.com/bzp2010/schedule/internal/scheduler"
+	"github.com/icza/gog"
+	"github.com/pkg/errors"
 )
+
+// CreateTask is the resolver for the createTask field.
+func (r *mutationResolver) CreateTask(ctx context.Context, input models1.CreateTask) (*models.Task, error) {
+	task := models.Task{
+		Name:            input.Name,
+		Type:            input.Type,
+		LastRunningAt:   sql.NullTime{Valid: false},
+		LastRunningTime: 0,
+		Status: gog.If(
+			input.Status != nil,
+			*input.Status,
+			models.StatusEnabled,
+		),
+	}
+
+	var err error
+	switch input.Type {
+	case models.TaskTypeShell:
+		if input.Configuration.Shell == nil {
+			return nil, errors.New("shell configuration cannot be empty")
+		}
+		task.Configuration, err = json.Marshal(input.Configuration.Shell)
+	case models.TaskTypeWebhook:
+		if input.Configuration.Webhook == nil {
+			return nil, errors.New("webhook configuration cannot be empty")
+		}
+		task.Configuration, err = json.Marshal(input.Configuration.Webhook)
+	}
+
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to process configuration")
+	}
+
+	// write task to database
+	result := database.GetDatabase().Create(&task)
+	if err := result.Error; err != nil {
+		return nil, errors.Wrap(err, "failed to create task")
+	}
+	if result.RowsAffected < 1 {
+		return nil, errors.New("failed to create task: data is not written")
+	}
+
+	// reload scheduler task
+	scheduler.GetScheduler().ReloadTask()
+
+	return &task, nil
+}
 
 // Task is the resolver for the task field.
 func (r *queryResolver) Task(ctx context.Context, id int64) (*models.Task, error) {
@@ -22,7 +75,7 @@ func (r *queryResolver) Task(ctx context.Context, id int64) (*models.Task, error
 		return nil, err
 	}
 	if result.RowsAffected <= 0 {
-		return nil, fmt.Errorf("task does not exist: id %d", id)
+		return nil, errors.Errorf("task does not exist: id %d", id)
 	}
 	return &task, nil
 }
@@ -75,7 +128,11 @@ func (r *queryResolver) Jobs(ctx context.Context, limit int, offset int, reverse
 	return jobs, nil
 }
 
+// Mutation returns generated.MutationResolver implementation.
+func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
+
 // Query returns generated.QueryResolver implementation.
 func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 
+type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }

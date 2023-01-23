@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+
+	"github.com/bzp2010/schedule/internal/database/models"
 )
 
 type Model interface {
@@ -17,6 +19,21 @@ type Model interface {
 
 type TaskConfiguration interface {
 	IsTaskConfiguration()
+}
+
+// CreateTask is the data structure used by mutation of create Task
+type CreateTask struct {
+	Name          string                  `json:"name"`
+	Type          models.TaskType         `json:"type"`
+	Configuration *InputTaskConfiguration `json:"configuration"`
+	Status        *models.Status          `json:"status"`
+}
+
+// InputTaskConfiguration is a collection type of InputTaskConfigurationShell and InputTaskConfigurationWebhook,
+// which is an alternative to the temporarily unsupported inputUnion
+type InputTaskConfiguration struct {
+	Shell   *models.TaskConfigurationShell   `json:"shell"`
+	Webhook *models.TaskConfigurationWebhook `json:"webhook"`
 }
 
 type HTTPMethod string

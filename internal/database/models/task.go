@@ -47,22 +47,23 @@ type Task struct {
 
 // TaskConfigurationShell define the data structure of shell task configuration
 type TaskConfigurationShell struct {
-	Command string `json:"command"`
-	Timeout time.Duration
+	Command string        `json:"command"`
+	Timeout time.Duration `json:"timeout"`
 }
 
 func (tcs TaskConfigurationShell) IsTaskConfiguration() {}
 
-// TaskConfigurationShell define the data structure of webhook task configuration
+// TaskConfigurationWebhook define the data structure of webhook task configuration
 type TaskConfigurationWebhook struct {
 	URL    string `json:"url"`
-	Method string
+	Method string `json:"method"`
 }
 
 func (tcw TaskConfigurationWebhook) IsTaskConfiguration() {}
 
 // Implement GraphQL's models.Model interface to simplify data assembly,
 // the data corresponding to models.Model is gorm.Model
+
 func (t Task) IsModel() {}
 
 func (t Task) GetID() int64 {

@@ -13,8 +13,8 @@ import (
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
-	"github.com/bzp2010/schedule/internal/database/models"
-	models1 "github.com/bzp2010/schedule/internal/handler/graphql/models"
+	models1 "github.com/bzp2010/schedule/internal/database/models"
+	"github.com/bzp2010/schedule/internal/handler/graphql/models"
 	gqlparser "github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
 )
@@ -38,11 +38,14 @@ type Config struct {
 
 type ResolverRoot interface {
 	Job() JobResolver
+	Mutation() MutationResolver
 	Query() QueryResolver
 	Task() TaskResolver
 	TaskConfigurationShell() TaskConfigurationShellResolver
 	TaskConfigurationWebhook() TaskConfigurationWebhookResolver
 	TaskRule() TaskRuleResolver
+	InputTaskConfigurationShell() InputTaskConfigurationShellResolver
+	InputTaskConfigurationWebhook() InputTaskConfigurationWebhookResolver
 }
 
 type DirectiveRoot struct {
@@ -60,6 +63,10 @@ type ComplexityRoot struct {
 		Task      func(childComplexity int) int
 		TaskRule  func(childComplexity int) int
 		UpdatedAt func(childComplexity int) int
+	}
+
+	Mutation struct {
+		CreateTask func(childComplexity int, input models.CreateTask) int
 	}
 
 	Query struct {
@@ -108,50 +115,60 @@ type ComplexityRoot struct {
 }
 
 type JobResolver interface {
-	ID(ctx context.Context, obj *models.Job) (int64, error)
-	Task(ctx context.Context, obj *models.Job) (*models.Task, error)
-	TaskRule(ctx context.Context, obj *models.Job) (*models.TaskRule, error)
+	ID(ctx context.Context, obj *models1.Job) (int64, error)
+	Task(ctx context.Context, obj *models1.Job) (*models1.Task, error)
+	TaskRule(ctx context.Context, obj *models1.Job) (*models1.TaskRule, error)
 
-	StartAt(ctx context.Context, obj *models.Job) (int64, error)
-	StopAt(ctx context.Context, obj *models.Job) (int64, error)
-	IsTimeout(ctx context.Context, obj *models.Job) (bool, error)
-	CreatedAt(ctx context.Context, obj *models.Job) (int64, error)
-	UpdatedAt(ctx context.Context, obj *models.Job) (int64, error)
+	StartAt(ctx context.Context, obj *models1.Job) (int64, error)
+	StopAt(ctx context.Context, obj *models1.Job) (int64, error)
+	IsTimeout(ctx context.Context, obj *models1.Job) (bool, error)
+	CreatedAt(ctx context.Context, obj *models1.Job) (int64, error)
+	UpdatedAt(ctx context.Context, obj *models1.Job) (int64, error)
+}
+type MutationResolver interface {
+	CreateTask(ctx context.Context, input models.CreateTask) (*models1.Task, error)
 }
 type QueryResolver interface {
-	Task(ctx context.Context, id int64) (*models.Task, error)
-	Tasks(ctx context.Context, limit int, offset int) ([]models.Task, error)
-	Job(ctx context.Context, id int64) (*models.Job, error)
-	Jobs(ctx context.Context, limit int, offset int, reverseOrder bool) ([]models.Job, error)
+	Task(ctx context.Context, id int64) (*models1.Task, error)
+	Tasks(ctx context.Context, limit int, offset int) ([]models1.Task, error)
+	Job(ctx context.Context, id int64) (*models1.Job, error)
+	Jobs(ctx context.Context, limit int, offset int, reverseOrder bool) ([]models1.Job, error)
 }
 type TaskResolver interface {
-	ID(ctx context.Context, obj *models.Task) (int64, error)
+	ID(ctx context.Context, obj *models1.Task) (int64, error)
 
-	Type(ctx context.Context, obj *models.Task) (models.TaskType, error)
-	Configuration(ctx context.Context, obj *models.Task) (models1.TaskConfiguration, error)
-	Rules(ctx context.Context, obj *models.Task, limit int, offset int) ([]models.TaskRule, error)
-	Jobs(ctx context.Context, obj *models.Task, limit int, offset int, reverseOrder bool) ([]models.Job, error)
-	LastRunningAt(ctx context.Context, obj *models.Task) (int64, error)
+	Type(ctx context.Context, obj *models1.Task) (models1.TaskType, error)
+	Configuration(ctx context.Context, obj *models1.Task) (models.TaskConfiguration, error)
+	Rules(ctx context.Context, obj *models1.Task, limit int, offset int) ([]models1.TaskRule, error)
+	Jobs(ctx context.Context, obj *models1.Task, limit int, offset int, reverseOrder bool) ([]models1.Job, error)
+	LastRunningAt(ctx context.Context, obj *models1.Task) (int64, error)
 
-	CreatedAt(ctx context.Context, obj *models.Task) (int64, error)
-	UpdatedAt(ctx context.Context, obj *models.Task) (int64, error)
+	CreatedAt(ctx context.Context, obj *models1.Task) (int64, error)
+	UpdatedAt(ctx context.Context, obj *models1.Task) (int64, error)
 }
 type TaskConfigurationShellResolver interface {
-	Timeout(ctx context.Context, obj *models.TaskConfigurationShell) (int64, error)
+	Timeout(ctx context.Context, obj *models1.TaskConfigurationShell) (int64, error)
 }
 type TaskConfigurationWebhookResolver interface {
-	Method(ctx context.Context, obj *models.TaskConfigurationWebhook) (models1.HTTPMethod, error)
+	Method(ctx context.Context, obj *models1.TaskConfigurationWebhook) (models.HTTPMethod, error)
 }
 type TaskRuleResolver interface {
-	ID(ctx context.Context, obj *models.TaskRule) (int64, error)
-	Task(ctx context.Context, obj *models.TaskRule) (*models.Task, error)
-	Description(ctx context.Context, obj *models.TaskRule) (string, error)
+	ID(ctx context.Context, obj *models1.TaskRule) (int64, error)
+	Task(ctx context.Context, obj *models1.TaskRule) (*models1.Task, error)
+	Description(ctx context.Context, obj *models1.TaskRule) (string, error)
 
-	LastRunningAt(ctx context.Context, obj *models.TaskRule) (int64, error)
+	LastRunningAt(ctx context.Context, obj *models1.TaskRule) (int64, error)
 
-	Jobs(ctx context.Context, obj *models.TaskRule, limit int, offset int, reverseOrder bool) ([]models.Job, error)
-	CreatedAt(ctx context.Context, obj *models.TaskRule) (int64, error)
-	UpdatedAt(ctx context.Context, obj *models.TaskRule) (int64, error)
+	Jobs(ctx context.Context, obj *models1.TaskRule, limit int, offset int, reverseOrder bool) ([]models1.Job, error)
+	CreatedAt(ctx context.Context, obj *models1.TaskRule) (int64, error)
+	UpdatedAt(ctx context.Context, obj *models1.TaskRule) (int64, error)
+}
+
+type InputTaskConfigurationShellResolver interface {
+	Timeout(ctx context.Context, obj *models1.TaskConfigurationShell, data int64) error
+}
+type InputTaskConfigurationWebhookResolver interface {
+	Method(ctx context.Context, obj *models1.TaskConfigurationWebhook, data models.HTTPMethod) error
 }
 
 type executableSchema struct {
@@ -238,6 +255,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Job.UpdatedAt(childComplexity), true
+
+	case "Mutation.createTask":
+		if e.complexity.Mutation.CreateTask == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createTask_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreateTask(childComplexity, args["input"].(models.CreateTask)), true
 
 	case "Query.job":
 		if e.complexity.Query.Job == nil {
@@ -484,7 +513,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	rc := graphql.GetOperationContext(ctx)
 	ec := executionContext{rc, e}
-	inputUnmarshalMap := graphql.BuildUnmarshalerMap()
+	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
+		ec.unmarshalInputCreateTask,
+		ec.unmarshalInputInputTaskConfiguration,
+		ec.unmarshalInputInputTaskConfigurationShell,
+		ec.unmarshalInputInputTaskConfigurationWebhook,
+	)
 	first := true
 
 	switch rc.Operation.Operation {
@@ -496,6 +530,21 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 			first = false
 			ctx = graphql.WithUnmarshalerMap(ctx, inputUnmarshalMap)
 			data := ec._Query(ctx, rc.Operation.SelectionSet)
+			var buf bytes.Buffer
+			data.MarshalGQL(&buf)
+
+			return &graphql.Response{
+				Data: buf.Bytes(),
+			}
+		}
+	case ast.Mutation:
+		return func(ctx context.Context) *graphql.Response {
+			if !first {
+				return nil
+			}
+			first = false
+			ctx = graphql.WithUnmarshalerMap(ctx, inputUnmarshalMap)
+			data := ec._Mutation(ctx, rc.Operation.SelectionSet)
 			var buf bytes.Buffer
 			data.MarshalGQL(&buf)
 
@@ -574,6 +623,16 @@ var sources = []*ast.Source{
 `, BuiltIn: false},
 	{Name: "../schema/root.graphql", Input: `scalar Int64
 
+directive @goModel(model: String, models: [String!]) on OBJECT
+    | INPUT_OBJECT
+    | SCALAR
+    | ENUM
+    | INTERFACE
+    | UNION
+
+directive @goField(forceResolver: Boolean, name: String) on INPUT_FIELD_DEFINITION
+    | FIELD_DEFINITION
+
 enum Status {
     ENABLED
     DISABLED
@@ -584,6 +643,10 @@ type Query {
     tasks(limit: Int! = 10, offset: Int! = 0): [Task!]!
     job(id: ID!): Job
     jobs(limit: Int! = 10, offset: Int! = 0, reverse_order: Boolean! = true): [Job!]!
+}
+
+type Mutation {
+    createTask(input: CreateTask!): Task!
 }
 
 interface Model {
@@ -679,6 +742,41 @@ type Task implements Model {
     """
     status: Status!
 }
+
+"""
+TaskConfigurationShell is the configuration input for shell type tasks
+"""
+input InputTaskConfigurationShell @goModel(model: "github.com/bzp2010/schedule/internal/database/models.TaskConfigurationShell") {
+    command: String!
+    timeout: Int64!
+}
+
+"""
+InputTaskConfigurationWebhook is the configuration input for webhook type tasks
+"""
+input InputTaskConfigurationWebhook @goModel(model: "github.com/bzp2010/schedule/internal/database/models.TaskConfigurationWebhook") {
+    url: String!
+    method: HTTPMethod!
+}
+
+"""
+InputTaskConfiguration is a collection type of InputTaskConfigurationShell and InputTaskConfigurationWebhook,
+which is an alternative to the temporarily unsupported inputUnion
+"""
+input InputTaskConfiguration {
+    shell: InputTaskConfigurationShell
+    webhook: InputTaskConfigurationWebhook
+}
+
+"""
+CreateTask is the data structure used by mutation of create Task
+"""
+input CreateTask {
+    name: String!
+    type: TaskType!
+    configuration: InputTaskConfiguration!
+    status: Status
+}
 `, BuiltIn: false},
 	{Name: "../schema/task_rule.graphql", Input: `type TaskRule implements Model {
     """
@@ -729,6 +827,21 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 // endregion ************************** generated!.gotpl **************************
 
 // region    ***************************** args.gotpl *****************************
+
+func (ec *executionContext) field_Mutation_createTask_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 models.CreateTask
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNCreateTask2githubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋhandlerᚋgraphqlᚋmodelsᚐCreateTask(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
 
 func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
@@ -960,7 +1073,7 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 
 // region    **************************** field.gotpl *****************************
 
-func (ec *executionContext) _Job_id(ctx context.Context, field graphql.CollectedField, obj *models.Job) (ret graphql.Marshaler) {
+func (ec *executionContext) _Job_id(ctx context.Context, field graphql.CollectedField, obj *models1.Job) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Job_id(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -1004,7 +1117,7 @@ func (ec *executionContext) fieldContext_Job_id(ctx context.Context, field graph
 	return fc, nil
 }
 
-func (ec *executionContext) _Job_task(ctx context.Context, field graphql.CollectedField, obj *models.Job) (ret graphql.Marshaler) {
+func (ec *executionContext) _Job_task(ctx context.Context, field graphql.CollectedField, obj *models1.Job) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Job_task(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -1030,7 +1143,7 @@ func (ec *executionContext) _Job_task(ctx context.Context, field graphql.Collect
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*models.Task)
+	res := resTmp.(*models1.Task)
 	fc.Result = res
 	return ec.marshalNTask2ᚖgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTask(ctx, field.Selections, res)
 }
@@ -1072,7 +1185,7 @@ func (ec *executionContext) fieldContext_Job_task(ctx context.Context, field gra
 	return fc, nil
 }
 
-func (ec *executionContext) _Job_task_rule(ctx context.Context, field graphql.CollectedField, obj *models.Job) (ret graphql.Marshaler) {
+func (ec *executionContext) _Job_task_rule(ctx context.Context, field graphql.CollectedField, obj *models1.Job) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Job_task_rule(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -1098,7 +1211,7 @@ func (ec *executionContext) _Job_task_rule(ctx context.Context, field graphql.Co
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*models.TaskRule)
+	res := resTmp.(*models1.TaskRule)
 	fc.Result = res
 	return ec.marshalNTaskRule2ᚖgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTaskRule(ctx, field.Selections, res)
 }
@@ -1138,7 +1251,7 @@ func (ec *executionContext) fieldContext_Job_task_rule(ctx context.Context, fiel
 	return fc, nil
 }
 
-func (ec *executionContext) _Job_stdout(ctx context.Context, field graphql.CollectedField, obj *models.Job) (ret graphql.Marshaler) {
+func (ec *executionContext) _Job_stdout(ctx context.Context, field graphql.CollectedField, obj *models1.Job) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Job_stdout(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -1182,7 +1295,7 @@ func (ec *executionContext) fieldContext_Job_stdout(ctx context.Context, field g
 	return fc, nil
 }
 
-func (ec *executionContext) _Job_stderr(ctx context.Context, field graphql.CollectedField, obj *models.Job) (ret graphql.Marshaler) {
+func (ec *executionContext) _Job_stderr(ctx context.Context, field graphql.CollectedField, obj *models1.Job) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Job_stderr(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -1226,7 +1339,7 @@ func (ec *executionContext) fieldContext_Job_stderr(ctx context.Context, field g
 	return fc, nil
 }
 
-func (ec *executionContext) _Job_start_at(ctx context.Context, field graphql.CollectedField, obj *models.Job) (ret graphql.Marshaler) {
+func (ec *executionContext) _Job_start_at(ctx context.Context, field graphql.CollectedField, obj *models1.Job) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Job_start_at(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -1270,7 +1383,7 @@ func (ec *executionContext) fieldContext_Job_start_at(ctx context.Context, field
 	return fc, nil
 }
 
-func (ec *executionContext) _Job_stop_at(ctx context.Context, field graphql.CollectedField, obj *models.Job) (ret graphql.Marshaler) {
+func (ec *executionContext) _Job_stop_at(ctx context.Context, field graphql.CollectedField, obj *models1.Job) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Job_stop_at(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -1314,7 +1427,7 @@ func (ec *executionContext) fieldContext_Job_stop_at(ctx context.Context, field 
 	return fc, nil
 }
 
-func (ec *executionContext) _Job_is_timeout(ctx context.Context, field graphql.CollectedField, obj *models.Job) (ret graphql.Marshaler) {
+func (ec *executionContext) _Job_is_timeout(ctx context.Context, field graphql.CollectedField, obj *models1.Job) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Job_is_timeout(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -1358,7 +1471,7 @@ func (ec *executionContext) fieldContext_Job_is_timeout(ctx context.Context, fie
 	return fc, nil
 }
 
-func (ec *executionContext) _Job_created_at(ctx context.Context, field graphql.CollectedField, obj *models.Job) (ret graphql.Marshaler) {
+func (ec *executionContext) _Job_created_at(ctx context.Context, field graphql.CollectedField, obj *models1.Job) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Job_created_at(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -1402,7 +1515,7 @@ func (ec *executionContext) fieldContext_Job_created_at(ctx context.Context, fie
 	return fc, nil
 }
 
-func (ec *executionContext) _Job_updated_at(ctx context.Context, field graphql.CollectedField, obj *models.Job) (ret graphql.Marshaler) {
+func (ec *executionContext) _Job_updated_at(ctx context.Context, field graphql.CollectedField, obj *models1.Job) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Job_updated_at(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -1446,6 +1559,85 @@ func (ec *executionContext) fieldContext_Job_updated_at(ctx context.Context, fie
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_createTask(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_createTask(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CreateTask(rctx, fc.Args["input"].(models.CreateTask))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models1.Task)
+	fc.Result = res
+	return ec.marshalNTask2ᚖgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTask(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_createTask(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Task_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Task_name(ctx, field)
+			case "type":
+				return ec.fieldContext_Task_type(ctx, field)
+			case "configuration":
+				return ec.fieldContext_Task_configuration(ctx, field)
+			case "rules":
+				return ec.fieldContext_Task_rules(ctx, field)
+			case "jobs":
+				return ec.fieldContext_Task_jobs(ctx, field)
+			case "last_running_at":
+				return ec.fieldContext_Task_last_running_at(ctx, field)
+			case "last_running_time":
+				return ec.fieldContext_Task_last_running_time(ctx, field)
+			case "created_at":
+				return ec.fieldContext_Task_created_at(ctx, field)
+			case "updated_at":
+				return ec.fieldContext_Task_updated_at(ctx, field)
+			case "status":
+				return ec.fieldContext_Task_status(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Task", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_createTask_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_task(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Query_task(ctx, field)
 	if err != nil {
@@ -1469,7 +1661,7 @@ func (ec *executionContext) _Query_task(ctx context.Context, field graphql.Colle
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*models.Task)
+	res := resTmp.(*models1.Task)
 	fc.Result = res
 	return ec.marshalOTask2ᚖgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTask(ctx, field.Selections, res)
 }
@@ -1548,7 +1740,7 @@ func (ec *executionContext) _Query_tasks(ctx context.Context, field graphql.Coll
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]models.Task)
+	res := resTmp.([]models1.Task)
 	fc.Result = res
 	return ec.marshalNTask2ᚕgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTaskᚄ(ctx, field.Selections, res)
 }
@@ -1624,7 +1816,7 @@ func (ec *executionContext) _Query_job(ctx context.Context, field graphql.Collec
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*models.Job)
+	res := resTmp.(*models1.Job)
 	fc.Result = res
 	return ec.marshalOJob2ᚖgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐJob(ctx, field.Selections, res)
 }
@@ -1701,7 +1893,7 @@ func (ec *executionContext) _Query_jobs(ctx context.Context, field graphql.Colle
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]models.Job)
+	res := resTmp.([]models1.Job)
 	fc.Result = res
 	return ec.marshalNJob2ᚕgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐJobᚄ(ctx, field.Selections, res)
 }
@@ -1881,7 +2073,7 @@ func (ec *executionContext) fieldContext_Query___schema(ctx context.Context, fie
 	return fc, nil
 }
 
-func (ec *executionContext) _Task_id(ctx context.Context, field graphql.CollectedField, obj *models.Task) (ret graphql.Marshaler) {
+func (ec *executionContext) _Task_id(ctx context.Context, field graphql.CollectedField, obj *models1.Task) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Task_id(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -1925,7 +2117,7 @@ func (ec *executionContext) fieldContext_Task_id(ctx context.Context, field grap
 	return fc, nil
 }
 
-func (ec *executionContext) _Task_name(ctx context.Context, field graphql.CollectedField, obj *models.Task) (ret graphql.Marshaler) {
+func (ec *executionContext) _Task_name(ctx context.Context, field graphql.CollectedField, obj *models1.Task) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Task_name(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -1969,7 +2161,7 @@ func (ec *executionContext) fieldContext_Task_name(ctx context.Context, field gr
 	return fc, nil
 }
 
-func (ec *executionContext) _Task_type(ctx context.Context, field graphql.CollectedField, obj *models.Task) (ret graphql.Marshaler) {
+func (ec *executionContext) _Task_type(ctx context.Context, field graphql.CollectedField, obj *models1.Task) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Task_type(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -1995,7 +2187,7 @@ func (ec *executionContext) _Task_type(ctx context.Context, field graphql.Collec
 		}
 		return graphql.Null
 	}
-	res := resTmp.(models.TaskType)
+	res := resTmp.(models1.TaskType)
 	fc.Result = res
 	return ec.marshalNTaskType2githubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTaskType(ctx, field.Selections, res)
 }
@@ -2013,7 +2205,7 @@ func (ec *executionContext) fieldContext_Task_type(ctx context.Context, field gr
 	return fc, nil
 }
 
-func (ec *executionContext) _Task_configuration(ctx context.Context, field graphql.CollectedField, obj *models.Task) (ret graphql.Marshaler) {
+func (ec *executionContext) _Task_configuration(ctx context.Context, field graphql.CollectedField, obj *models1.Task) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Task_configuration(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -2039,7 +2231,7 @@ func (ec *executionContext) _Task_configuration(ctx context.Context, field graph
 		}
 		return graphql.Null
 	}
-	res := resTmp.(models1.TaskConfiguration)
+	res := resTmp.(models.TaskConfiguration)
 	fc.Result = res
 	return ec.marshalNTaskConfiguration2githubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋhandlerᚋgraphqlᚋmodelsᚐTaskConfiguration(ctx, field.Selections, res)
 }
@@ -2057,7 +2249,7 @@ func (ec *executionContext) fieldContext_Task_configuration(ctx context.Context,
 	return fc, nil
 }
 
-func (ec *executionContext) _Task_rules(ctx context.Context, field graphql.CollectedField, obj *models.Task) (ret graphql.Marshaler) {
+func (ec *executionContext) _Task_rules(ctx context.Context, field graphql.CollectedField, obj *models1.Task) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Task_rules(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -2083,7 +2275,7 @@ func (ec *executionContext) _Task_rules(ctx context.Context, field graphql.Colle
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]models.TaskRule)
+	res := resTmp.([]models1.TaskRule)
 	fc.Result = res
 	return ec.marshalNTaskRule2ᚕgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTaskRuleᚄ(ctx, field.Selections, res)
 }
@@ -2134,7 +2326,7 @@ func (ec *executionContext) fieldContext_Task_rules(ctx context.Context, field g
 	return fc, nil
 }
 
-func (ec *executionContext) _Task_jobs(ctx context.Context, field graphql.CollectedField, obj *models.Task) (ret graphql.Marshaler) {
+func (ec *executionContext) _Task_jobs(ctx context.Context, field graphql.CollectedField, obj *models1.Task) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Task_jobs(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -2160,7 +2352,7 @@ func (ec *executionContext) _Task_jobs(ctx context.Context, field graphql.Collec
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]models.Job)
+	res := resTmp.([]models1.Job)
 	fc.Result = res
 	return ec.marshalNJob2ᚕgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐJobᚄ(ctx, field.Selections, res)
 }
@@ -2211,7 +2403,7 @@ func (ec *executionContext) fieldContext_Task_jobs(ctx context.Context, field gr
 	return fc, nil
 }
 
-func (ec *executionContext) _Task_last_running_at(ctx context.Context, field graphql.CollectedField, obj *models.Task) (ret graphql.Marshaler) {
+func (ec *executionContext) _Task_last_running_at(ctx context.Context, field graphql.CollectedField, obj *models1.Task) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Task_last_running_at(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -2255,7 +2447,7 @@ func (ec *executionContext) fieldContext_Task_last_running_at(ctx context.Contex
 	return fc, nil
 }
 
-func (ec *executionContext) _Task_last_running_time(ctx context.Context, field graphql.CollectedField, obj *models.Task) (ret graphql.Marshaler) {
+func (ec *executionContext) _Task_last_running_time(ctx context.Context, field graphql.CollectedField, obj *models1.Task) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Task_last_running_time(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -2299,7 +2491,7 @@ func (ec *executionContext) fieldContext_Task_last_running_time(ctx context.Cont
 	return fc, nil
 }
 
-func (ec *executionContext) _Task_created_at(ctx context.Context, field graphql.CollectedField, obj *models.Task) (ret graphql.Marshaler) {
+func (ec *executionContext) _Task_created_at(ctx context.Context, field graphql.CollectedField, obj *models1.Task) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Task_created_at(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -2343,7 +2535,7 @@ func (ec *executionContext) fieldContext_Task_created_at(ctx context.Context, fi
 	return fc, nil
 }
 
-func (ec *executionContext) _Task_updated_at(ctx context.Context, field graphql.CollectedField, obj *models.Task) (ret graphql.Marshaler) {
+func (ec *executionContext) _Task_updated_at(ctx context.Context, field graphql.CollectedField, obj *models1.Task) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Task_updated_at(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -2387,7 +2579,7 @@ func (ec *executionContext) fieldContext_Task_updated_at(ctx context.Context, fi
 	return fc, nil
 }
 
-func (ec *executionContext) _Task_status(ctx context.Context, field graphql.CollectedField, obj *models.Task) (ret graphql.Marshaler) {
+func (ec *executionContext) _Task_status(ctx context.Context, field graphql.CollectedField, obj *models1.Task) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Task_status(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -2413,7 +2605,7 @@ func (ec *executionContext) _Task_status(ctx context.Context, field graphql.Coll
 		}
 		return graphql.Null
 	}
-	res := resTmp.(models.Status)
+	res := resTmp.(models1.Status)
 	fc.Result = res
 	return ec.marshalNStatus2githubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐStatus(ctx, field.Selections, res)
 }
@@ -2431,7 +2623,7 @@ func (ec *executionContext) fieldContext_Task_status(ctx context.Context, field 
 	return fc, nil
 }
 
-func (ec *executionContext) _TaskConfigurationShell_command(ctx context.Context, field graphql.CollectedField, obj *models.TaskConfigurationShell) (ret graphql.Marshaler) {
+func (ec *executionContext) _TaskConfigurationShell_command(ctx context.Context, field graphql.CollectedField, obj *models1.TaskConfigurationShell) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_TaskConfigurationShell_command(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -2475,7 +2667,7 @@ func (ec *executionContext) fieldContext_TaskConfigurationShell_command(ctx cont
 	return fc, nil
 }
 
-func (ec *executionContext) _TaskConfigurationShell_timeout(ctx context.Context, field graphql.CollectedField, obj *models.TaskConfigurationShell) (ret graphql.Marshaler) {
+func (ec *executionContext) _TaskConfigurationShell_timeout(ctx context.Context, field graphql.CollectedField, obj *models1.TaskConfigurationShell) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_TaskConfigurationShell_timeout(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -2519,7 +2711,7 @@ func (ec *executionContext) fieldContext_TaskConfigurationShell_timeout(ctx cont
 	return fc, nil
 }
 
-func (ec *executionContext) _TaskConfigurationWebhook_url(ctx context.Context, field graphql.CollectedField, obj *models.TaskConfigurationWebhook) (ret graphql.Marshaler) {
+func (ec *executionContext) _TaskConfigurationWebhook_url(ctx context.Context, field graphql.CollectedField, obj *models1.TaskConfigurationWebhook) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_TaskConfigurationWebhook_url(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -2563,7 +2755,7 @@ func (ec *executionContext) fieldContext_TaskConfigurationWebhook_url(ctx contex
 	return fc, nil
 }
 
-func (ec *executionContext) _TaskConfigurationWebhook_method(ctx context.Context, field graphql.CollectedField, obj *models.TaskConfigurationWebhook) (ret graphql.Marshaler) {
+func (ec *executionContext) _TaskConfigurationWebhook_method(ctx context.Context, field graphql.CollectedField, obj *models1.TaskConfigurationWebhook) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_TaskConfigurationWebhook_method(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -2589,7 +2781,7 @@ func (ec *executionContext) _TaskConfigurationWebhook_method(ctx context.Context
 		}
 		return graphql.Null
 	}
-	res := resTmp.(models1.HTTPMethod)
+	res := resTmp.(models.HTTPMethod)
 	fc.Result = res
 	return ec.marshalNHTTPMethod2githubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋhandlerᚋgraphqlᚋmodelsᚐHTTPMethod(ctx, field.Selections, res)
 }
@@ -2607,7 +2799,7 @@ func (ec *executionContext) fieldContext_TaskConfigurationWebhook_method(ctx con
 	return fc, nil
 }
 
-func (ec *executionContext) _TaskRule_id(ctx context.Context, field graphql.CollectedField, obj *models.TaskRule) (ret graphql.Marshaler) {
+func (ec *executionContext) _TaskRule_id(ctx context.Context, field graphql.CollectedField, obj *models1.TaskRule) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_TaskRule_id(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -2651,7 +2843,7 @@ func (ec *executionContext) fieldContext_TaskRule_id(ctx context.Context, field 
 	return fc, nil
 }
 
-func (ec *executionContext) _TaskRule_task(ctx context.Context, field graphql.CollectedField, obj *models.TaskRule) (ret graphql.Marshaler) {
+func (ec *executionContext) _TaskRule_task(ctx context.Context, field graphql.CollectedField, obj *models1.TaskRule) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_TaskRule_task(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -2677,7 +2869,7 @@ func (ec *executionContext) _TaskRule_task(ctx context.Context, field graphql.Co
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*models.Task)
+	res := resTmp.(*models1.Task)
 	fc.Result = res
 	return ec.marshalNTask2ᚖgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTask(ctx, field.Selections, res)
 }
@@ -2719,7 +2911,7 @@ func (ec *executionContext) fieldContext_TaskRule_task(ctx context.Context, fiel
 	return fc, nil
 }
 
-func (ec *executionContext) _TaskRule_description(ctx context.Context, field graphql.CollectedField, obj *models.TaskRule) (ret graphql.Marshaler) {
+func (ec *executionContext) _TaskRule_description(ctx context.Context, field graphql.CollectedField, obj *models1.TaskRule) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_TaskRule_description(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -2763,7 +2955,7 @@ func (ec *executionContext) fieldContext_TaskRule_description(ctx context.Contex
 	return fc, nil
 }
 
-func (ec *executionContext) _TaskRule_rule(ctx context.Context, field graphql.CollectedField, obj *models.TaskRule) (ret graphql.Marshaler) {
+func (ec *executionContext) _TaskRule_rule(ctx context.Context, field graphql.CollectedField, obj *models1.TaskRule) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_TaskRule_rule(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -2807,7 +2999,7 @@ func (ec *executionContext) fieldContext_TaskRule_rule(ctx context.Context, fiel
 	return fc, nil
 }
 
-func (ec *executionContext) _TaskRule_last_running_at(ctx context.Context, field graphql.CollectedField, obj *models.TaskRule) (ret graphql.Marshaler) {
+func (ec *executionContext) _TaskRule_last_running_at(ctx context.Context, field graphql.CollectedField, obj *models1.TaskRule) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_TaskRule_last_running_at(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -2851,7 +3043,7 @@ func (ec *executionContext) fieldContext_TaskRule_last_running_at(ctx context.Co
 	return fc, nil
 }
 
-func (ec *executionContext) _TaskRule_last_running_time(ctx context.Context, field graphql.CollectedField, obj *models.TaskRule) (ret graphql.Marshaler) {
+func (ec *executionContext) _TaskRule_last_running_time(ctx context.Context, field graphql.CollectedField, obj *models1.TaskRule) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_TaskRule_last_running_time(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -2895,7 +3087,7 @@ func (ec *executionContext) fieldContext_TaskRule_last_running_time(ctx context.
 	return fc, nil
 }
 
-func (ec *executionContext) _TaskRule_jobs(ctx context.Context, field graphql.CollectedField, obj *models.TaskRule) (ret graphql.Marshaler) {
+func (ec *executionContext) _TaskRule_jobs(ctx context.Context, field graphql.CollectedField, obj *models1.TaskRule) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_TaskRule_jobs(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -2921,7 +3113,7 @@ func (ec *executionContext) _TaskRule_jobs(ctx context.Context, field graphql.Co
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]models.Job)
+	res := resTmp.([]models1.Job)
 	fc.Result = res
 	return ec.marshalNJob2ᚕgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐJobᚄ(ctx, field.Selections, res)
 }
@@ -2972,7 +3164,7 @@ func (ec *executionContext) fieldContext_TaskRule_jobs(ctx context.Context, fiel
 	return fc, nil
 }
 
-func (ec *executionContext) _TaskRule_created_at(ctx context.Context, field graphql.CollectedField, obj *models.TaskRule) (ret graphql.Marshaler) {
+func (ec *executionContext) _TaskRule_created_at(ctx context.Context, field graphql.CollectedField, obj *models1.TaskRule) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_TaskRule_created_at(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -3016,7 +3208,7 @@ func (ec *executionContext) fieldContext_TaskRule_created_at(ctx context.Context
 	return fc, nil
 }
 
-func (ec *executionContext) _TaskRule_updated_at(ctx context.Context, field graphql.CollectedField, obj *models.TaskRule) (ret graphql.Marshaler) {
+func (ec *executionContext) _TaskRule_updated_at(ctx context.Context, field graphql.CollectedField, obj *models1.TaskRule) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_TaskRule_updated_at(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -3060,7 +3252,7 @@ func (ec *executionContext) fieldContext_TaskRule_updated_at(ctx context.Context
 	return fc, nil
 }
 
-func (ec *executionContext) _TaskRule_status(ctx context.Context, field graphql.CollectedField, obj *models.TaskRule) (ret graphql.Marshaler) {
+func (ec *executionContext) _TaskRule_status(ctx context.Context, field graphql.CollectedField, obj *models1.TaskRule) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_TaskRule_status(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -3086,7 +3278,7 @@ func (ec *executionContext) _TaskRule_status(ctx context.Context, field graphql.
 		}
 		return graphql.Null
 	}
-	res := resTmp.(models.Status)
+	res := resTmp.(models1.Status)
 	fc.Result = res
 	return ec.marshalNStatus2githubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐStatus(ctx, field.Selections, res)
 }
@@ -4877,31 +5069,197 @@ func (ec *executionContext) fieldContext___Type_specifiedByURL(ctx context.Conte
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputCreateTask(ctx context.Context, obj interface{}) (models.CreateTask, error) {
+	var it models.CreateTask
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"name", "type", "configuration", "status"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "name":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			it.Name, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "type":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("type"))
+			it.Type, err = ec.unmarshalNTaskType2githubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTaskType(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "configuration":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("configuration"))
+			it.Configuration, err = ec.unmarshalNInputTaskConfiguration2ᚖgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋhandlerᚋgraphqlᚋmodelsᚐInputTaskConfiguration(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "status":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("status"))
+			it.Status, err = ec.unmarshalOStatus2ᚖgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐStatus(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputInputTaskConfiguration(ctx context.Context, obj interface{}) (models.InputTaskConfiguration, error) {
+	var it models.InputTaskConfiguration
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"shell", "webhook"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "shell":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("shell"))
+			it.Shell, err = ec.unmarshalOInputTaskConfigurationShell2ᚖgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTaskConfigurationShell(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "webhook":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("webhook"))
+			it.Webhook, err = ec.unmarshalOInputTaskConfigurationWebhook2ᚖgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTaskConfigurationWebhook(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputInputTaskConfigurationShell(ctx context.Context, obj interface{}) (models1.TaskConfigurationShell, error) {
+	var it models1.TaskConfigurationShell
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"command", "timeout"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "command":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("command"))
+			it.Command, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "timeout":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("timeout"))
+			data, err := ec.unmarshalNInt642int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			if err = ec.resolvers.InputTaskConfigurationShell().Timeout(ctx, &it, data); err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputInputTaskConfigurationWebhook(ctx context.Context, obj interface{}) (models1.TaskConfigurationWebhook, error) {
+	var it models1.TaskConfigurationWebhook
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"url", "method"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "url":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("url"))
+			it.URL, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "method":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("method"))
+			data, err := ec.unmarshalNHTTPMethod2githubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋhandlerᚋgraphqlᚋmodelsᚐHTTPMethod(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			if err = ec.resolvers.InputTaskConfigurationWebhook().Method(ctx, &it, data); err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
 
-func (ec *executionContext) _Model(ctx context.Context, sel ast.SelectionSet, obj models1.Model) graphql.Marshaler {
+func (ec *executionContext) _Model(ctx context.Context, sel ast.SelectionSet, obj models.Model) graphql.Marshaler {
 	switch obj := (obj).(type) {
 	case nil:
 		return graphql.Null
-	case models.Job:
+	case models1.Job:
 		return ec._Job(ctx, sel, &obj)
-	case *models.Job:
+	case *models1.Job:
 		if obj == nil {
 			return graphql.Null
 		}
 		return ec._Job(ctx, sel, obj)
-	case models.Task:
+	case models1.Task:
 		return ec._Task(ctx, sel, &obj)
-	case *models.Task:
+	case *models1.Task:
 		if obj == nil {
 			return graphql.Null
 		}
 		return ec._Task(ctx, sel, obj)
-	case models.TaskRule:
+	case models1.TaskRule:
 		return ec._TaskRule(ctx, sel, &obj)
-	case *models.TaskRule:
+	case *models1.TaskRule:
 		if obj == nil {
 			return graphql.Null
 		}
@@ -4911,20 +5269,20 @@ func (ec *executionContext) _Model(ctx context.Context, sel ast.SelectionSet, ob
 	}
 }
 
-func (ec *executionContext) _TaskConfiguration(ctx context.Context, sel ast.SelectionSet, obj models1.TaskConfiguration) graphql.Marshaler {
+func (ec *executionContext) _TaskConfiguration(ctx context.Context, sel ast.SelectionSet, obj models.TaskConfiguration) graphql.Marshaler {
 	switch obj := (obj).(type) {
 	case nil:
 		return graphql.Null
-	case models.TaskConfigurationShell:
+	case models1.TaskConfigurationShell:
 		return ec._TaskConfigurationShell(ctx, sel, &obj)
-	case *models.TaskConfigurationShell:
+	case *models1.TaskConfigurationShell:
 		if obj == nil {
 			return graphql.Null
 		}
 		return ec._TaskConfigurationShell(ctx, sel, obj)
-	case models.TaskConfigurationWebhook:
+	case models1.TaskConfigurationWebhook:
 		return ec._TaskConfigurationWebhook(ctx, sel, &obj)
-	case *models.TaskConfigurationWebhook:
+	case *models1.TaskConfigurationWebhook:
 		if obj == nil {
 			return graphql.Null
 		}
@@ -4940,7 +5298,7 @@ func (ec *executionContext) _TaskConfiguration(ctx context.Context, sel ast.Sele
 
 var jobImplementors = []string{"Job", "Model"}
 
-func (ec *executionContext) _Job(ctx context.Context, sel ast.SelectionSet, obj *models.Job) graphql.Marshaler {
+func (ec *executionContext) _Job(ctx context.Context, sel ast.SelectionSet, obj *models1.Job) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, jobImplementors)
 	out := graphql.NewFieldSet(fields)
 	var invalids uint32
@@ -5133,6 +5491,45 @@ func (ec *executionContext) _Job(ctx context.Context, sel ast.SelectionSet, obj 
 	return out
 }
 
+var mutationImplementors = []string{"Mutation"}
+
+func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, mutationImplementors)
+	ctx = graphql.WithFieldContext(ctx, &graphql.FieldContext{
+		Object: "Mutation",
+	})
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		innerCtx := graphql.WithRootFieldContext(ctx, &graphql.RootFieldContext{
+			Object: field.Name,
+			Field:  field,
+		})
+
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Mutation")
+		case "createTask":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_createTask(ctx, field)
+			})
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var queryImplementors = []string{"Query"}
 
 func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
@@ -5263,7 +5660,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 
 var taskImplementors = []string{"Task", "Model"}
 
-func (ec *executionContext) _Task(ctx context.Context, sel ast.SelectionSet, obj *models.Task) graphql.Marshaler {
+func (ec *executionContext) _Task(ctx context.Context, sel ast.SelectionSet, obj *models1.Task) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, taskImplementors)
 	out := graphql.NewFieldSet(fields)
 	var invalids uint32
@@ -5465,7 +5862,7 @@ func (ec *executionContext) _Task(ctx context.Context, sel ast.SelectionSet, obj
 
 var taskConfigurationShellImplementors = []string{"TaskConfigurationShell", "TaskConfiguration"}
 
-func (ec *executionContext) _TaskConfigurationShell(ctx context.Context, sel ast.SelectionSet, obj *models.TaskConfigurationShell) graphql.Marshaler {
+func (ec *executionContext) _TaskConfigurationShell(ctx context.Context, sel ast.SelectionSet, obj *models1.TaskConfigurationShell) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, taskConfigurationShellImplementors)
 	out := graphql.NewFieldSet(fields)
 	var invalids uint32
@@ -5513,7 +5910,7 @@ func (ec *executionContext) _TaskConfigurationShell(ctx context.Context, sel ast
 
 var taskConfigurationWebhookImplementors = []string{"TaskConfigurationWebhook", "TaskConfiguration"}
 
-func (ec *executionContext) _TaskConfigurationWebhook(ctx context.Context, sel ast.SelectionSet, obj *models.TaskConfigurationWebhook) graphql.Marshaler {
+func (ec *executionContext) _TaskConfigurationWebhook(ctx context.Context, sel ast.SelectionSet, obj *models1.TaskConfigurationWebhook) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, taskConfigurationWebhookImplementors)
 	out := graphql.NewFieldSet(fields)
 	var invalids uint32
@@ -5561,7 +5958,7 @@ func (ec *executionContext) _TaskConfigurationWebhook(ctx context.Context, sel a
 
 var taskRuleImplementors = []string{"TaskRule", "Model"}
 
-func (ec *executionContext) _TaskRule(ctx context.Context, sel ast.SelectionSet, obj *models.TaskRule) graphql.Marshaler {
+func (ec *executionContext) _TaskRule(ctx context.Context, sel ast.SelectionSet, obj *models1.TaskRule) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, taskRuleImplementors)
 	out := graphql.NewFieldSet(fields)
 	var invalids uint32
@@ -6074,13 +6471,18 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
-func (ec *executionContext) unmarshalNHTTPMethod2githubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋhandlerᚋgraphqlᚋmodelsᚐHTTPMethod(ctx context.Context, v interface{}) (models1.HTTPMethod, error) {
-	var res models1.HTTPMethod
+func (ec *executionContext) unmarshalNCreateTask2githubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋhandlerᚋgraphqlᚋmodelsᚐCreateTask(ctx context.Context, v interface{}) (models.CreateTask, error) {
+	res, err := ec.unmarshalInputCreateTask(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNHTTPMethod2githubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋhandlerᚋgraphqlᚋmodelsᚐHTTPMethod(ctx context.Context, v interface{}) (models.HTTPMethod, error) {
+	var res models.HTTPMethod
 	err := res.UnmarshalGQL(v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNHTTPMethod2githubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋhandlerᚋgraphqlᚋmodelsᚐHTTPMethod(ctx context.Context, sel ast.SelectionSet, v models1.HTTPMethod) graphql.Marshaler {
+func (ec *executionContext) marshalNHTTPMethod2githubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋhandlerᚋgraphqlᚋmodelsᚐHTTPMethod(ctx context.Context, sel ast.SelectionSet, v models.HTTPMethod) graphql.Marshaler {
 	return v
 }
 
@@ -6097,6 +6499,11 @@ func (ec *executionContext) marshalNID2int64(ctx context.Context, sel ast.Select
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNInputTaskConfiguration2ᚖgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋhandlerᚋgraphqlᚋmodelsᚐInputTaskConfiguration(ctx context.Context, v interface{}) (*models.InputTaskConfiguration, error) {
+	res, err := ec.unmarshalInputInputTaskConfiguration(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalNInt2int(ctx context.Context, v interface{}) (int, error) {
@@ -6129,11 +6536,11 @@ func (ec *executionContext) marshalNInt642int64(ctx context.Context, sel ast.Sel
 	return res
 }
 
-func (ec *executionContext) marshalNJob2githubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐJob(ctx context.Context, sel ast.SelectionSet, v models.Job) graphql.Marshaler {
+func (ec *executionContext) marshalNJob2githubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐJob(ctx context.Context, sel ast.SelectionSet, v models1.Job) graphql.Marshaler {
 	return ec._Job(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNJob2ᚕgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐJobᚄ(ctx context.Context, sel ast.SelectionSet, v []models.Job) graphql.Marshaler {
+func (ec *executionContext) marshalNJob2ᚕgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐJobᚄ(ctx context.Context, sel ast.SelectionSet, v []models1.Job) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -6177,13 +6584,13 @@ func (ec *executionContext) marshalNJob2ᚕgithubᚗcomᚋbzp2010ᚋscheduleᚋi
 	return ret
 }
 
-func (ec *executionContext) unmarshalNStatus2githubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐStatus(ctx context.Context, v interface{}) (models.Status, error) {
-	var res models.Status
+func (ec *executionContext) unmarshalNStatus2githubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐStatus(ctx context.Context, v interface{}) (models1.Status, error) {
+	var res models1.Status
 	err := res.UnmarshalGQL(v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNStatus2githubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐStatus(ctx context.Context, sel ast.SelectionSet, v models.Status) graphql.Marshaler {
+func (ec *executionContext) marshalNStatus2githubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐStatus(ctx context.Context, sel ast.SelectionSet, v models1.Status) graphql.Marshaler {
 	return v
 }
 
@@ -6202,11 +6609,11 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 	return res
 }
 
-func (ec *executionContext) marshalNTask2githubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTask(ctx context.Context, sel ast.SelectionSet, v models.Task) graphql.Marshaler {
+func (ec *executionContext) marshalNTask2githubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTask(ctx context.Context, sel ast.SelectionSet, v models1.Task) graphql.Marshaler {
 	return ec._Task(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNTask2ᚕgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTaskᚄ(ctx context.Context, sel ast.SelectionSet, v []models.Task) graphql.Marshaler {
+func (ec *executionContext) marshalNTask2ᚕgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTaskᚄ(ctx context.Context, sel ast.SelectionSet, v []models1.Task) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -6250,7 +6657,7 @@ func (ec *executionContext) marshalNTask2ᚕgithubᚗcomᚋbzp2010ᚋscheduleᚋ
 	return ret
 }
 
-func (ec *executionContext) marshalNTask2ᚖgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTask(ctx context.Context, sel ast.SelectionSet, v *models.Task) graphql.Marshaler {
+func (ec *executionContext) marshalNTask2ᚖgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTask(ctx context.Context, sel ast.SelectionSet, v *models1.Task) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -6260,7 +6667,7 @@ func (ec *executionContext) marshalNTask2ᚖgithubᚗcomᚋbzp2010ᚋscheduleᚋ
 	return ec._Task(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNTaskConfiguration2githubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋhandlerᚋgraphqlᚋmodelsᚐTaskConfiguration(ctx context.Context, sel ast.SelectionSet, v models1.TaskConfiguration) graphql.Marshaler {
+func (ec *executionContext) marshalNTaskConfiguration2githubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋhandlerᚋgraphqlᚋmodelsᚐTaskConfiguration(ctx context.Context, sel ast.SelectionSet, v models.TaskConfiguration) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -6270,11 +6677,11 @@ func (ec *executionContext) marshalNTaskConfiguration2githubᚗcomᚋbzp2010ᚋs
 	return ec._TaskConfiguration(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNTaskRule2githubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTaskRule(ctx context.Context, sel ast.SelectionSet, v models.TaskRule) graphql.Marshaler {
+func (ec *executionContext) marshalNTaskRule2githubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTaskRule(ctx context.Context, sel ast.SelectionSet, v models1.TaskRule) graphql.Marshaler {
 	return ec._TaskRule(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNTaskRule2ᚕgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTaskRuleᚄ(ctx context.Context, sel ast.SelectionSet, v []models.TaskRule) graphql.Marshaler {
+func (ec *executionContext) marshalNTaskRule2ᚕgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTaskRuleᚄ(ctx context.Context, sel ast.SelectionSet, v []models1.TaskRule) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -6318,7 +6725,7 @@ func (ec *executionContext) marshalNTaskRule2ᚕgithubᚗcomᚋbzp2010ᚋschedul
 	return ret
 }
 
-func (ec *executionContext) marshalNTaskRule2ᚖgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTaskRule(ctx context.Context, sel ast.SelectionSet, v *models.TaskRule) graphql.Marshaler {
+func (ec *executionContext) marshalNTaskRule2ᚖgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTaskRule(ctx context.Context, sel ast.SelectionSet, v *models1.TaskRule) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -6328,13 +6735,13 @@ func (ec *executionContext) marshalNTaskRule2ᚖgithubᚗcomᚋbzp2010ᚋschedul
 	return ec._TaskRule(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNTaskType2githubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTaskType(ctx context.Context, v interface{}) (models.TaskType, error) {
+func (ec *executionContext) unmarshalNTaskType2githubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTaskType(ctx context.Context, v interface{}) (models1.TaskType, error) {
 	tmp, err := graphql.UnmarshalString(v)
-	res := models.TaskType(tmp)
+	res := models1.TaskType(tmp)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNTaskType2githubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTaskType(ctx context.Context, sel ast.SelectionSet, v models.TaskType) graphql.Marshaler {
+func (ec *executionContext) marshalNTaskType2githubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTaskType(ctx context.Context, sel ast.SelectionSet, v models1.TaskType) graphql.Marshaler {
 	res := graphql.MarshalString(string(v))
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -6623,11 +7030,81 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	return res
 }
 
-func (ec *executionContext) marshalOJob2ᚖgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐJob(ctx context.Context, sel ast.SelectionSet, v *models.Job) graphql.Marshaler {
+func (ec *executionContext) unmarshalOInputTaskConfigurationShell2ᚖgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTaskConfigurationShell(ctx context.Context, v interface{}) (*models1.TaskConfigurationShell, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputInputTaskConfigurationShell(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOInputTaskConfigurationWebhook2ᚖgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTaskConfigurationWebhook(ctx context.Context, v interface{}) (*models1.TaskConfigurationWebhook, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputInputTaskConfigurationWebhook(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOJob2ᚖgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐJob(ctx context.Context, sel ast.SelectionSet, v *models1.Job) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._Job(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOStatus2ᚖgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐStatus(ctx context.Context, v interface{}) (*models1.Status, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(models1.Status)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOStatus2ᚖgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐStatus(ctx context.Context, sel ast.SelectionSet, v *models1.Status) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
+}
+
+func (ec *executionContext) unmarshalOString2ᚕstringᚄ(ctx context.Context, v interface{}) ([]string, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []interface{}
+	if v != nil {
+		vSlice = graphql.CoerceList(v)
+	}
+	var err error
+	res := make([]string, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNString2string(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalOString2ᚕstringᚄ(ctx context.Context, sel ast.SelectionSet, v []string) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalNString2string(ctx, sel, v[i])
+	}
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) unmarshalOString2ᚖstring(ctx context.Context, v interface{}) (*string, error) {
@@ -6646,7 +7123,7 @@ func (ec *executionContext) marshalOString2ᚖstring(ctx context.Context, sel as
 	return res
 }
 
-func (ec *executionContext) marshalOTask2ᚖgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTask(ctx context.Context, sel ast.SelectionSet, v *models.Task) graphql.Marshaler {
+func (ec *executionContext) marshalOTask2ᚖgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTask(ctx context.Context, sel ast.SelectionSet, v *models1.Task) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
