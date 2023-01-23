@@ -15,6 +15,8 @@ import (
 	"github.com/bzp2010/schedule/internal/handler/graphql/consts"
 	"github.com/bzp2010/schedule/internal/handler/graphql/generated"
 	models1 "github.com/bzp2010/schedule/internal/handler/graphql/models"
+	"github.com/bzp2010/schedule/internal/scheduler"
+	"github.com/icza/gog"
 	"github.com/pkg/errors"
 )
 
@@ -25,12 +27,11 @@ func (r *mutationResolver) CreateTask(ctx context.Context, input models1.CreateT
 		Type:            input.Type,
 		LastRunningAt:   sql.NullTime{Valid: false},
 		LastRunningTime: 0,
-	}
-
-	if input.Status != nil {
-		task.Status = *input.Status
-	} else {
-		task.Status = models.StatusEnabled
+		Status: gog.If(
+			input.Status != nil,
+			*input.Status,
+			models.StatusEnabled,
+		),
 	}
 
 	var err error
@@ -51,6 +52,7 @@ func (r *mutationResolver) CreateTask(ctx context.Context, input models1.CreateT
 		return nil, errors.Wrap(err, "failed to process configuration")
 	}
 
+	// write task to database
 	result := database.GetDatabase().Create(&task)
 	if err := result.Error; err != nil {
 		return nil, errors.Wrap(err, "failed to create task")
@@ -59,7 +61,9 @@ func (r *mutationResolver) CreateTask(ctx context.Context, input models1.CreateT
 		return nil, errors.New("failed to create task: data is not written")
 	}
 
-	//TODO reload all task
+	// reload scheduler task
+	scheduler.GetScheduler().ReloadTask()
+
 	return &task, nil
 }
 
