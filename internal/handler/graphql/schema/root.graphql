@@ -22,4 +22,8 @@ type Mutation {
     Create a task
     """
     createTask(input: CreateTask!): Task!
+    """
+    Edit a task
+    """
+    editTask(id: ID!, input: EditTask!): Task
 }

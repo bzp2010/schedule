@@ -38,6 +38,18 @@ type CreateTask struct {
 	Status *models.Status `json:"status"`
 }
 
+// EditTask is the data structure used by mutation of edit Task
+type EditTask struct {
+	// Task name
+	Name *string `json:"name"`
+	// Task type (SHELL, WEBHOOK)
+	Type *models.TaskType `json:"type"`
+	// Task configuration
+	Configuration *InputTaskConfiguration `json:"configuration"`
+	// Status of the task
+	Status *models.Status `json:"status"`
+}
+
 // InputTaskConfiguration is a collection type of InputTaskConfigurationShell and InputTaskConfigurationWebhook,
 // which is an alternative to the temporarily unsupported inputUnion
 type InputTaskConfiguration struct {
