@@ -64,16 +64,21 @@ func (job *Job) RemoveFlag(flag JobFlag) {
 
 // Implement GraphQL's models.Model interface to simplify data assembly,
 // the data corresponding to models.Model is gorm.Model
+
+// IsModel is a flag field of the GraphQL Model interface
 func (job Job) IsModel() {}
 
+// GetID is a function to get the field value of GraphQL Model
 func (job Job) GetID() int64 {
 	return int64(job.ID)
 }
 
+// GetCreatedAt is a function to get the field value of GraphQL Model
 func (job Job) GetCreatedAt() int64 {
 	return job.CreatedAt.UnixMilli()
 }
 
+// GetUpdatedAt is a function to get the field value of GraphQL Model
 func (job Job) GetUpdatedAt() int64 {
 	return job.CreatedAt.UnixMilli()
 }

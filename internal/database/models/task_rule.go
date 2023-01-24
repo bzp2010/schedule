@@ -35,16 +35,21 @@ type TaskRule struct {
 
 // Implement GraphQL's models.Model interface to simplify data assembly,
 // the data corresponding to models.Model is gorm.Model
+
+// IsModel is a flag field of the GraphQL Model interface
 func (tr TaskRule) IsModel() {}
 
+// GetID is a function to get the field value of GraphQL Model
 func (tr TaskRule) GetID() int64 {
 	return int64(tr.ID)
 }
 
+// GetCreatedAt is a function to get the field value of GraphQL Model
 func (tr TaskRule) GetCreatedAt() int64 {
 	return tr.CreatedAt.UnixMilli()
 }
 
+// GetUpdatedAt is a function to get the field value of GraphQL Model
 func (tr TaskRule) GetUpdatedAt() int64 {
 	return tr.UpdatedAt.UnixMilli()
 }

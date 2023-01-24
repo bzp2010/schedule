@@ -10,32 +10,44 @@ import (
 	"github.com/bzp2010/schedule/internal/database/models"
 )
 
+// Definition of the base fields of the data model
 type Model interface {
 	IsModel()
+	// Entry ID
 	GetID() int64
+	// Entry created time
 	GetCreatedAt() int64
+	// Entry updated time
 	GetUpdatedAt() int64
 }
 
+// TaskConfiguration is an aggregated type of multiple configurations
 type TaskConfiguration interface {
 	IsTaskConfiguration()
 }
 
 // CreateTask is the data structure used by mutation of create Task
 type CreateTask struct {
-	Name          string                  `json:"name"`
-	Type          models.TaskType         `json:"type"`
+	// Task name
+	Name string `json:"name"`
+	// Task type (SHELL, WEBHOOK)
+	Type models.TaskType `json:"type"`
+	// Task configuration
 	Configuration *InputTaskConfiguration `json:"configuration"`
-	Status        *models.Status          `json:"status"`
+	// Status of the task
+	Status *models.Status `json:"status"`
 }
 
 // InputTaskConfiguration is a collection type of InputTaskConfigurationShell and InputTaskConfigurationWebhook,
 // which is an alternative to the temporarily unsupported inputUnion
 type InputTaskConfiguration struct {
-	Shell   *models.TaskConfigurationShell   `json:"shell"`
+	// Shell task configuration
+	Shell *models.TaskConfigurationShell `json:"shell"`
+	// Webhook task configuration
 	Webhook *models.TaskConfigurationWebhook `json:"webhook"`
 }
 
+// HTTPMethod indicates the list of HTTP methods
 type HTTPMethod string
 
 const (

@@ -8,7 +8,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"time"
 
 	"github.com/bzp2010/schedule/internal/database"
 	"github.com/bzp2010/schedule/internal/database/models"
@@ -122,18 +121,6 @@ func (r *taskConfigurationWebhookResolver) Method(ctx context.Context, obj *mode
 	return models1.HTTPMethod(obj.Method), nil
 }
 
-// Timeout is the resolver for the timeout field.
-func (r *inputTaskConfigurationShellResolver) Timeout(ctx context.Context, obj *models.TaskConfigurationShell, data int64) error {
-	obj.Timeout = time.Duration(data) * time.Millisecond
-	return nil
-}
-
-// Method is the resolver for the method field.
-func (r *inputTaskConfigurationWebhookResolver) Method(ctx context.Context, obj *models.TaskConfigurationWebhook, data models1.HTTPMethod) error {
-	obj.Method = string(data)
-	return nil
-}
-
 // Task returns generated.TaskResolver implementation.
 func (r *Resolver) Task() generated.TaskResolver { return &taskResolver{r} }
 
@@ -147,18 +134,6 @@ func (r *Resolver) TaskConfigurationWebhook() generated.TaskConfigurationWebhook
 	return &taskConfigurationWebhookResolver{r}
 }
 
-// InputTaskConfigurationShell returns generated.InputTaskConfigurationShellResolver implementation.
-func (r *Resolver) InputTaskConfigurationShell() generated.InputTaskConfigurationShellResolver {
-	return &inputTaskConfigurationShellResolver{r}
-}
-
-// InputTaskConfigurationWebhook returns generated.InputTaskConfigurationWebhookResolver implementation.
-func (r *Resolver) InputTaskConfigurationWebhook() generated.InputTaskConfigurationWebhookResolver {
-	return &inputTaskConfigurationWebhookResolver{r}
-}
-
 type taskResolver struct{ *Resolver }
 type taskConfigurationShellResolver struct{ *Resolver }
 type taskConfigurationWebhookResolver struct{ *Resolver }
-type inputTaskConfigurationShellResolver struct{ *Resolver }
-type inputTaskConfigurationWebhookResolver struct{ *Resolver }

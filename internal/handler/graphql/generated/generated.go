@@ -578,7 +578,48 @@ func (ec *executionContext) introspectType(name string) (*introspection.Type, er
 }
 
 var sources = []*ast.Source{
-	{Name: "../schema/job.graphql", Input: `type Job implements Model {
+	{Name: "../schema/common.graphql", Input: `"""
+Long integer scalar type definition
+"""
+scalar Int64
+
+directive @goModel(model: String, models: [String!]) on OBJECT
+    | INPUT_OBJECT
+    | SCALAR
+    | ENUM
+    | INTERFACE
+    | UNION
+
+directive @goField(forceResolver: Boolean, name: String) on INPUT_FIELD_DEFINITION
+    | FIELD_DEFINITION
+
+"""
+Definition of the status of a data entry
+"""
+enum Status {
+    ENABLED
+    DISABLED
+}
+
+"""
+Definition of the base fields of the data model
+"""
+interface Model {
+    """
+    Entry ID
+    """
+    id: ID!
+    """
+    Entry created time
+    """
+    created_at: Int64!
+    """
+    Entry updated time
+    """
+    updated_at: Int64!
+}
+`, BuiltIn: false},
+	{Name: "../schema/job/job.graphql", Input: `type Job implements Model {
     """
     Job ID
     """
@@ -621,41 +662,101 @@ var sources = []*ast.Source{
     updated_at: Int64!
 }
 `, BuiltIn: false},
-	{Name: "../schema/root.graphql", Input: `scalar Int64
-
-directive @goModel(model: String, models: [String!]) on OBJECT
-    | INPUT_OBJECT
-    | SCALAR
-    | ENUM
-    | INTERFACE
-    | UNION
-
-directive @goField(forceResolver: Boolean, name: String) on INPUT_FIELD_DEFINITION
-    | FIELD_DEFINITION
-
-enum Status {
-    ENABLED
-    DISABLED
-}
-
-type Query {
+	{Name: "../schema/root.graphql", Input: `type Query {
+    """
+    Get a single task
+    """
     task(id: ID!): Task
+    """
+    Get the list of tasks
+    """
     tasks(limit: Int! = 10, offset: Int! = 0): [Task!]!
+    """
+    Get a single job
+    """
     job(id: ID!): Job
+    """
+    Get the list of jobs
+    """
     jobs(limit: Int! = 10, offset: Int! = 0, reverse_order: Boolean! = true): [Job!]!
 }
 
 type Mutation {
+    """
+    Create a task
+    """
     createTask(input: CreateTask!): Task!
 }
+`, BuiltIn: false},
+	{Name: "../schema/task/input.graphql", Input: `"""
+InputTaskConfigurationShell is the configuration input for shell type tasks
+"""
+input InputTaskConfigurationShell @goModel(model: "github.com/bzp2010/schedule/internal/database/models.TaskConfigurationShell") {
+    """
+    Command run in the Shell task
+    """
+    command: String!
+    """
+    Maximum time of Shell task execution
+    """
+    timeout: Int64!
+}
 
-interface Model {
-    id: ID!
-    created_at: Int64!
-    updated_at: Int64!
+"""
+InputTaskConfigurationWebhook is the configuration input for webhook type tasks
+"""
+input InputTaskConfigurationWebhook @goModel(model: "github.com/bzp2010/schedule/internal/database/models.TaskConfigurationWebhook") {
+    """
+    URL of the Webhook task request
+    """
+    url: String!
+    """
+    HTTP methods of the Webhook task request
+    """
+    method: HTTPMethod!
+}
+
+"""
+InputTaskConfiguration is a collection type of InputTaskConfigurationShell and InputTaskConfigurationWebhook,
+which is an alternative to the temporarily unsupported inputUnion
+"""
+input InputTaskConfiguration {
+    """
+    Shell task configuration
+    """
+    shell: InputTaskConfigurationShell
+    """
+    Webhook task configuration
+    """
+    webhook: InputTaskConfigurationWebhook
+}
+
+"""
+CreateTask is the data structure used by mutation of create Task
+"""
+input CreateTask {
+    """
+    Task name
+    """
+    name: String!
+    """
+    Task type (SHELL, WEBHOOK)
+    """
+    type: TaskType!
+    """
+    Task configuration
+    """
+    configuration: InputTaskConfiguration!
+    """
+    Status of the task
+    """
+    status: Status
 }
 `, BuiltIn: false},
-	{Name: "../schema/task.graphql", Input: `enum TaskType {
+	{Name: "../schema/task/task.graphql", Input: `"""
+TaskType indicates the list of task type
+"""
+enum TaskType {
     """
     The type of task that execute external shell commands and log the results
     """
@@ -666,6 +767,9 @@ interface Model {
     WEBHOOK
 }
 
+"""
+HTTPMethod indicates the list of HTTP methods
+"""
 enum HTTPMethod {
     GET
     HEAD
@@ -682,7 +786,13 @@ enum HTTPMethod {
 TaskConfigurationShell is the configuration for shell type tasks
 """
 type TaskConfigurationShell {
+    """
+    Command run in the Shell task
+    """
     command: String!
+    """
+    Maximum time of Shell task execution
+    """
     timeout: Int64!
 }
 
@@ -690,12 +800,24 @@ type TaskConfigurationShell {
 TaskConfigurationShell is the configuration for webhook type tasks
 """
 type TaskConfigurationWebhook {
+    """
+    URL of the Webhook task request
+    """
     url: String!
+    """
+    HTTP methods of the Webhook task request
+    """
     method: HTTPMethod!
 }
 
+"""
+TaskConfiguration is an aggregated type of multiple configurations
+"""
 union TaskConfiguration = TaskConfigurationShell | TaskConfigurationWebhook
 
+"""
+Definition of Task data model
+"""
 type Task implements Model {
     """
     Task ID
@@ -742,43 +864,8 @@ type Task implements Model {
     """
     status: Status!
 }
-
-"""
-TaskConfigurationShell is the configuration input for shell type tasks
-"""
-input InputTaskConfigurationShell @goModel(model: "github.com/bzp2010/schedule/internal/database/models.TaskConfigurationShell") {
-    command: String!
-    timeout: Int64!
-}
-
-"""
-InputTaskConfigurationWebhook is the configuration input for webhook type tasks
-"""
-input InputTaskConfigurationWebhook @goModel(model: "github.com/bzp2010/schedule/internal/database/models.TaskConfigurationWebhook") {
-    url: String!
-    method: HTTPMethod!
-}
-
-"""
-InputTaskConfiguration is a collection type of InputTaskConfigurationShell and InputTaskConfigurationWebhook,
-which is an alternative to the temporarily unsupported inputUnion
-"""
-input InputTaskConfiguration {
-    shell: InputTaskConfigurationShell
-    webhook: InputTaskConfigurationWebhook
-}
-
-"""
-CreateTask is the data structure used by mutation of create Task
-"""
-input CreateTask {
-    name: String!
-    type: TaskType!
-    configuration: InputTaskConfiguration!
-    status: Status
-}
 `, BuiltIn: false},
-	{Name: "../schema/task_rule.graphql", Input: `type TaskRule implements Model {
+	{Name: "../schema/task_rule/task_rule.graphql", Input: `type TaskRule implements Model {
     """
     Task rule ID
     """

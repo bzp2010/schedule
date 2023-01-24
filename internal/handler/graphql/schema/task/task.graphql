@@ -1,3 +1,6 @@
+"""
+TaskType indicates the list of task type
+"""
 enum TaskType {
     """
     The type of task that execute external shell commands and log the results
@@ -9,6 +12,9 @@ enum TaskType {
     WEBHOOK
 }
 
+"""
+HTTPMethod indicates the list of HTTP methods
+"""
 enum HTTPMethod {
     GET
     HEAD
@@ -25,7 +31,13 @@ enum HTTPMethod {
 TaskConfigurationShell is the configuration for shell type tasks
 """
 type TaskConfigurationShell {
+    """
+    Command run in the Shell task
+    """
     command: String!
+    """
+    Maximum time of Shell task execution
+    """
     timeout: Int64!
 }
 
@@ -33,12 +45,24 @@ type TaskConfigurationShell {
 TaskConfigurationShell is the configuration for webhook type tasks
 """
 type TaskConfigurationWebhook {
+    """
+    URL of the Webhook task request
+    """
     url: String!
+    """
+    HTTP methods of the Webhook task request
+    """
     method: HTTPMethod!
 }
 
+"""
+TaskConfiguration is an aggregated type of multiple configurations
+"""
 union TaskConfiguration = TaskConfigurationShell | TaskConfigurationWebhook
 
+"""
+Definition of Task data model
+"""
 type Task implements Model {
     """
     Task ID
@@ -84,39 +108,4 @@ type Task implements Model {
     Status of the task
     """
     status: Status!
-}
-
-"""
-TaskConfigurationShell is the configuration input for shell type tasks
-"""
-input InputTaskConfigurationShell @goModel(model: "github.com/bzp2010/schedule/internal/database/models.TaskConfigurationShell") {
-    command: String!
-    timeout: Int64!
-}
-
-"""
-InputTaskConfigurationWebhook is the configuration input for webhook type tasks
-"""
-input InputTaskConfigurationWebhook @goModel(model: "github.com/bzp2010/schedule/internal/database/models.TaskConfigurationWebhook") {
-    url: String!
-    method: HTTPMethod!
-}
-
-"""
-InputTaskConfiguration is a collection type of InputTaskConfigurationShell and InputTaskConfigurationWebhook,
-which is an alternative to the temporarily unsupported inputUnion
-"""
-input InputTaskConfiguration {
-    shell: InputTaskConfigurationShell
-    webhook: InputTaskConfigurationWebhook
-}
-
-"""
-CreateTask is the data structure used by mutation of create Task
-"""
-input CreateTask {
-    name: String!
-    type: TaskType!
-    configuration: InputTaskConfiguration!
-    status: Status
 }
