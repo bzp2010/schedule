@@ -1,0 +1,40 @@
+"""
+Long integer scalar type definition
+"""
+scalar Int64
+
+directive @goModel(model: String, models: [String!]) on OBJECT
+    | INPUT_OBJECT
+    | SCALAR
+    | ENUM
+    | INTERFACE
+    | UNION
+
+directive @goField(forceResolver: Boolean, name: String) on INPUT_FIELD_DEFINITION
+    | FIELD_DEFINITION
+
+"""
+Definition of the status of a data entry
+"""
+enum Status {
+    ENABLED
+    DISABLED
+}
+
+"""
+Definition of the base fields of the data model
+"""
+interface Model {
+    """
+    Entry ID
+    """
+    id: ID!
+    """
+    Entry created time
+    """
+    created_at: Int64!
+    """
+    Entry updated time
+    """
+    updated_at: Int64!
+}

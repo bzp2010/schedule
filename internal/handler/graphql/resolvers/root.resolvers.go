@@ -34,6 +34,7 @@ func (r *mutationResolver) CreateTask(ctx context.Context, input models1.CreateT
 		),
 	}
 
+	// encoding task configuration
 	var err error
 	switch input.Type {
 	case models.TaskTypeShell:
@@ -47,7 +48,6 @@ func (r *mutationResolver) CreateTask(ctx context.Context, input models1.CreateT
 		}
 		task.Configuration, err = json.Marshal(input.Configuration.Webhook)
 	}
-
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to process configuration")
 	}

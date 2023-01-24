@@ -1,33 +1,25 @@
-scalar Int64
-
-directive @goModel(model: String, models: [String!]) on OBJECT
-    | INPUT_OBJECT
-    | SCALAR
-    | ENUM
-    | INTERFACE
-    | UNION
-
-directive @goField(forceResolver: Boolean, name: String) on INPUT_FIELD_DEFINITION
-    | FIELD_DEFINITION
-
-enum Status {
-    ENABLED
-    DISABLED
-}
-
 type Query {
+    """
+    Get a single task
+    """
     task(id: ID!): Task
+    """
+    Get the list of tasks
+    """
     tasks(limit: Int! = 10, offset: Int! = 0): [Task!]!
+    """
+    Get a single job
+    """
     job(id: ID!): Job
+    """
+    Get the list of jobs
+    """
     jobs(limit: Int! = 10, offset: Int! = 0, reverse_order: Boolean! = true): [Job!]!
 }
 
 type Mutation {
+    """
+    Create a task
+    """
     createTask(input: CreateTask!): Task!
-}
-
-interface Model {
-    id: ID!
-    created_at: Int64!
-    updated_at: Int64!
 }

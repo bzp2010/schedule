@@ -51,6 +51,7 @@ type TaskConfigurationShell struct {
 	Timeout time.Duration `json:"timeout"`
 }
 
+// IsTaskConfiguration is a flag function for task configuration
 func (tcs TaskConfigurationShell) IsTaskConfiguration() {}
 
 // TaskConfigurationWebhook define the data structure of webhook task configuration
@@ -59,21 +60,26 @@ type TaskConfigurationWebhook struct {
 	Method string `json:"method"`
 }
 
+// IsTaskConfiguration is a flag function for task configuration
 func (tcw TaskConfigurationWebhook) IsTaskConfiguration() {}
 
 // Implement GraphQL's models.Model interface to simplify data assembly,
 // the data corresponding to models.Model is gorm.Model
 
+// IsModel is a flag field of the GraphQL Model interface
 func (t Task) IsModel() {}
 
+// GetID is a function to get the field value of GraphQL Model
 func (t Task) GetID() int64 {
 	return int64(t.ID)
 }
 
+// GetCreatedAt is a function to get the field value of GraphQL Model
 func (t Task) GetCreatedAt() int64 {
 	return t.CreatedAt.UnixMilli()
 }
 
+// GetUpdatedAt is a function to get the field value of GraphQL Model
 func (t Task) GetUpdatedAt() int64 {
 	return t.UpdatedAt.UnixMilli()
 }
