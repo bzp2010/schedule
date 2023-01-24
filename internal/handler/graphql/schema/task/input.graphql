@@ -62,3 +62,25 @@ input CreateTask {
     """
     status: Status
 }
+
+"""
+EditTask is the data structure used by mutation of edit Task
+"""
+input EditTask {
+    """
+    Task name
+    """
+    name: String
+    """
+    Task type (SHELL, WEBHOOK)
+    """
+    type: TaskType
+    """
+    Task configuration
+    """
+    configuration: InputTaskConfiguration
+    """
+    Status of the task
+    """
+    status: Status
+}

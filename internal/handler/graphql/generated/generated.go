@@ -67,6 +67,7 @@ type ComplexityRoot struct {
 
 	Mutation struct {
 		CreateTask func(childComplexity int, input models.CreateTask) int
+		EditTask   func(childComplexity int, id int64, input models.EditTask) int
 	}
 
 	Query struct {
@@ -127,6 +128,7 @@ type JobResolver interface {
 }
 type MutationResolver interface {
 	CreateTask(ctx context.Context, input models.CreateTask) (*models1.Task, error)
+	EditTask(ctx context.Context, id int64, input models.EditTask) (*models1.Task, error)
 }
 type QueryResolver interface {
 	Task(ctx context.Context, id int64) (*models1.Task, error)
@@ -267,6 +269,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.CreateTask(childComplexity, args["input"].(models.CreateTask)), true
+
+	case "Mutation.editTask":
+		if e.complexity.Mutation.EditTask == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_editTask_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.EditTask(childComplexity, args["id"].(int64), args["input"].(models.EditTask)), true
 
 	case "Query.job":
 		if e.complexity.Query.Job == nil {
@@ -515,6 +529,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	ec := executionContext{rc, e}
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
 		ec.unmarshalInputCreateTask,
+		ec.unmarshalInputEditTask,
 		ec.unmarshalInputInputTaskConfiguration,
 		ec.unmarshalInputInputTaskConfigurationShell,
 		ec.unmarshalInputInputTaskConfigurationWebhook,
@@ -686,6 +701,10 @@ type Mutation {
     Create a task
     """
     createTask(input: CreateTask!): Task!
+    """
+    Edit a task
+    """
+    editTask(id: ID!, input: EditTask!): Task
 }
 `, BuiltIn: false},
 	{Name: "../schema/task/input.graphql", Input: `"""
@@ -747,6 +766,28 @@ input CreateTask {
     Task configuration
     """
     configuration: InputTaskConfiguration!
+    """
+    Status of the task
+    """
+    status: Status
+}
+
+"""
+EditTask is the data structure used by mutation of edit Task
+"""
+input EditTask {
+    """
+    Task name
+    """
+    name: String
+    """
+    Task type (SHELL, WEBHOOK)
+    """
+    type: TaskType
+    """
+    Task configuration
+    """
+    configuration: InputTaskConfiguration
     """
     Status of the task
     """
@@ -927,6 +968,30 @@ func (ec *executionContext) field_Mutation_createTask_args(ctx context.Context, 
 		}
 	}
 	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_editTask_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int64
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2int64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	var arg1 models.EditTask
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg1, err = ec.unmarshalNEditTask2githubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋhandlerᚋgraphqlᚋmodelsᚐEditTask(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg1
 	return args, nil
 }
 
@@ -1719,6 +1784,82 @@ func (ec *executionContext) fieldContext_Mutation_createTask(ctx context.Context
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_createTask_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_editTask(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_editTask(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().EditTask(rctx, fc.Args["id"].(int64), fc.Args["input"].(models.EditTask))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*models1.Task)
+	fc.Result = res
+	return ec.marshalOTask2ᚖgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTask(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_editTask(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Task_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Task_name(ctx, field)
+			case "type":
+				return ec.fieldContext_Task_type(ctx, field)
+			case "configuration":
+				return ec.fieldContext_Task_configuration(ctx, field)
+			case "rules":
+				return ec.fieldContext_Task_rules(ctx, field)
+			case "jobs":
+				return ec.fieldContext_Task_jobs(ctx, field)
+			case "last_running_at":
+				return ec.fieldContext_Task_last_running_at(ctx, field)
+			case "last_running_time":
+				return ec.fieldContext_Task_last_running_time(ctx, field)
+			case "created_at":
+				return ec.fieldContext_Task_created_at(ctx, field)
+			case "updated_at":
+				return ec.fieldContext_Task_updated_at(ctx, field)
+			case "status":
+				return ec.fieldContext_Task_status(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Task", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_editTask_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return
 	}
@@ -5208,6 +5349,58 @@ func (ec *executionContext) unmarshalInputCreateTask(ctx context.Context, obj in
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputEditTask(ctx context.Context, obj interface{}) (models.EditTask, error) {
+	var it models.EditTask
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"name", "type", "configuration", "status"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "name":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			it.Name, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "type":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("type"))
+			it.Type, err = ec.unmarshalOTaskType2ᚖgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTaskType(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "configuration":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("configuration"))
+			it.Configuration, err = ec.unmarshalOInputTaskConfiguration2ᚖgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋhandlerᚋgraphqlᚋmodelsᚐInputTaskConfiguration(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "status":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("status"))
+			it.Status, err = ec.unmarshalOStatus2ᚖgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐStatus(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputInputTaskConfiguration(ctx context.Context, obj interface{}) (models.InputTaskConfiguration, error) {
 	var it models.InputTaskConfiguration
 	asMap := map[string]interface{}{}
@@ -5606,6 +5799,12 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "editTask":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_editTask(ctx, field)
+			})
+
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -6563,6 +6762,11 @@ func (ec *executionContext) unmarshalNCreateTask2githubᚗcomᚋbzp2010ᚋschedu
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) unmarshalNEditTask2githubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋhandlerᚋgraphqlᚋmodelsᚐEditTask(ctx context.Context, v interface{}) (models.EditTask, error) {
+	res, err := ec.unmarshalInputEditTask(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNHTTPMethod2githubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋhandlerᚋgraphqlᚋmodelsᚐHTTPMethod(ctx context.Context, v interface{}) (models.HTTPMethod, error) {
 	var res models.HTTPMethod
 	err := res.UnmarshalGQL(v)
@@ -7117,6 +7321,14 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	return res
 }
 
+func (ec *executionContext) unmarshalOInputTaskConfiguration2ᚖgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋhandlerᚋgraphqlᚋmodelsᚐInputTaskConfiguration(ctx context.Context, v interface{}) (*models.InputTaskConfiguration, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputInputTaskConfiguration(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalOInputTaskConfigurationShell2ᚖgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTaskConfigurationShell(ctx context.Context, v interface{}) (*models1.TaskConfigurationShell, error) {
 	if v == nil {
 		return nil, nil
@@ -7215,6 +7427,23 @@ func (ec *executionContext) marshalOTask2ᚖgithubᚗcomᚋbzp2010ᚋscheduleᚋ
 		return graphql.Null
 	}
 	return ec._Task(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOTaskType2ᚖgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTaskType(ctx context.Context, v interface{}) (*models1.TaskType, error) {
+	if v == nil {
+		return nil, nil
+	}
+	tmp, err := graphql.UnmarshalString(v)
+	res := models1.TaskType(tmp)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOTaskType2ᚖgithubᚗcomᚋbzp2010ᚋscheduleᚋinternalᚋdatabaseᚋmodelsᚐTaskType(ctx context.Context, sel ast.SelectionSet, v *models1.TaskType) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	res := graphql.MarshalString(string(*v))
+	return res
 }
 
 func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.EnumValue) graphql.Marshaler {

@@ -27,11 +27,11 @@ func (r *mutationResolver) CreateTask(ctx context.Context, input models1.CreateT
 		Type:            input.Type,
 		LastRunningAt:   sql.NullTime{Valid: false},
 		LastRunningTime: 0,
-		Status: gog.If(
-			input.Status != nil,
-			*input.Status,
-			models.StatusEnabled,
-		),
+		Status:          models.StatusEnabled,
+	}
+
+	if input.Status != nil {
+		task.Status = *input.Status
 	}
 
 	// encoding task configuration
@@ -59,6 +59,63 @@ func (r *mutationResolver) CreateTask(ctx context.Context, input models1.CreateT
 	}
 	if result.RowsAffected < 1 {
 		return nil, errors.New("failed to create task: data is not written")
+	}
+
+	// reload scheduler task
+	scheduler.GetScheduler().ReloadTask()
+
+	return &task, nil
+}
+
+// EditTask is the resolver for the editTask field.
+func (r *mutationResolver) EditTask(ctx context.Context, id int64, input models1.EditTask) (*models.Task, error) {
+	var task models.Task
+	result := database.GetDatabase().Where("id = ?", id).Find(&task)
+	if err := result.Error; err != nil {
+		return nil, err
+	}
+	if result.RowsAffected <= 0 {
+		return nil, errors.Errorf("task does not exist: id %d", id)
+	}
+
+	if input.Name != nil {
+		task.Name = *input.Name
+	}
+
+	if input.Type != nil {
+		task.Type = *input.Type
+	}
+
+	if input.Status != nil {
+		task.Status = *input.Status
+	}
+
+	if input.Configuration != nil {
+		var err error
+		switch gog.If(input.Type != nil, *input.Type, task.Type) {
+		case models.TaskTypeShell:
+			if input.Configuration.Shell == nil {
+				return nil, errors.New("shell configuration cannot be empty")
+			}
+			task.Configuration, err = json.Marshal(input.Configuration.Shell)
+		case models.TaskTypeWebhook:
+			if input.Configuration.Webhook == nil {
+				return nil, errors.New("webhook configuration cannot be empty")
+			}
+			task.Configuration, err = json.Marshal(input.Configuration.Webhook)
+		}
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to process configuration")
+		}
+	}
+
+	// save data change
+	result = database.GetDatabase().Save(&task)
+	if err := result.Error; err != nil {
+		return nil, errors.Wrap(err, "failed to edit task")
+	}
+	if result.RowsAffected < 1 {
+		return nil, errors.New("failed to edit task: data is not written")
 	}
 
 	// reload scheduler task
