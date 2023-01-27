@@ -9,7 +9,14 @@
             "type": "go",
             "request": "launch",
             "mode": "auto",
-            "program": "main.go"
+            "program": "api/main.go"
+        },
+        {
+            "name": "Generate GraphQL stub",
+            "type": "f5anything",
+            "request": "launch",
+            "command": "cd ${workspaceFolder}/api; go run github.com/99designs/gqlgen generate --config gqlgen.yml",
+            "showTerminal": false
         }
     ]
 }
