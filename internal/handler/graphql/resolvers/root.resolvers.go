@@ -124,6 +124,27 @@ func (r *mutationResolver) EditTask(ctx context.Context, id int64, input models1
 	return &task, nil
 }
 
+// DeleteTask is the resolver for the deleteTask field.
+func (r *mutationResolver) DeleteTask(ctx context.Context, id int64) (*bool, error) {
+	var task models.Task
+	result := database.GetDatabase().Where("id = ?", id).Find(&task)
+	if err := result.Error; err != nil {
+		return nil, err
+	}
+	if result.RowsAffected <= 0 {
+		return nil, errors.Errorf("task does not exist: id %d", id)
+	}
+
+	result = database.GetDatabase().Delete(&task)
+	if err := result.Error; err != nil {
+		return nil, errors.Wrap(err, "failed to delete task")
+	}
+	if result.RowsAffected < 1 {
+		return nil, errors.New("failed to delete task: data is not deleted")
+	}
+	return gog.Ptr(true), nil
+}
+
 // Task is the resolver for the task field.
 func (r *queryResolver) Task(ctx context.Context, id int64) (*models.Task, error) {
 	var task models.Task

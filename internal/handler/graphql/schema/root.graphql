@@ -26,4 +26,8 @@ type Mutation {
     Edit a task
     """
     editTask(id: ID!, input: EditTask!): Task
+    """
+    Delete a task
+    """
+    deleteTask(id: ID!): Boolean
 }
