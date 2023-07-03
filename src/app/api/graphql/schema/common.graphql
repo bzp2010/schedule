@@ -1,0 +1,30 @@
+"""
+Long integer scalar type definition
+"""
+scalar Int64
+
+"""
+Definition of the status of a data entry
+"""
+enum Status {
+    ENABLED
+    DISABLED
+}
+
+"""
+Definition of the base fields of the data model
+"""
+interface Model {
+    """
+    Entry ID
+    """
+    id: Int!
+    """
+    Entry created time
+    """
+    createdAt: DateTime!
+    """
+    Entry updated time
+    """
+    updatedAt: DateTime!
+}

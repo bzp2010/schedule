@@ -1,0 +1,45 @@
+type Query {
+  """
+  Get a single task
+  """
+  task(id: Int!): Task
+  """
+  Get the list of tasks
+  """
+  tasks(limit: Int! = 10, offset: Int! = 0): [Task!]!
+  """
+  Get a single task rule
+  """
+  taskRule(id: Int!): TaskRule
+  """
+  Get the list of task rules
+  """
+  taskRules(taskId: Int, limit: Int! = 10, offset: Int! = 0): [TaskRule!]!
+  """
+  Get a single job
+  """
+  job(id: Int!): Job
+  """
+  Get the list of jobs
+  """
+  jobs(
+    limit: Int! = 10
+    offset: Int! = 0
+    reverse_order: Boolean! = true
+  ): [Job!]!
+}
+
+type Mutation {
+  """
+  Create a task
+  """
+  createTask(input: CreateTask!): Task!
+  """
+  Edit a task
+  """
+  editTask(id: ID!, input: EditTask!): Task
+  """
+  Delete a task
+  """
+  deleteTask(id: ID!): Boolean
+}

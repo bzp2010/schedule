@@ -1,0 +1,42 @@
+type Job implements Model {
+    """
+    Job ID
+    """
+    id: Int!
+    """
+    Job associated task
+    """
+    task: Task!
+    """
+    Job associated task rule
+    """
+    taskRule: TaskRule!
+    """
+    The stdout of job
+    """
+    stdout: String!
+    """
+    The stderr of job
+    """
+    stderr: String!
+    """
+    Job execution starts at
+    """
+    startAt: DateTime!
+    """
+    Job execution stops at
+    """
+    stopAt: DateTime!
+    """
+    Job execution timeout
+    """
+    isTimeout: Boolean!
+    """
+    Create time of the job
+    """
+    createdAt: DateTime!
+    """
+    Last update time of the job
+    """
+    updatedAt: DateTime!
+}

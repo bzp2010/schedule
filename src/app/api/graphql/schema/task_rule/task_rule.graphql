@@ -1,0 +1,42 @@
+type TaskRule implements Model {
+    """
+    Task rule ID
+    """
+    id: Int!
+    """
+    Task associated with the rule
+    """
+    task: Task!
+    """
+    Task rule description
+    """
+    description: String!
+    """
+    Task rule definition (in quartz format)
+    """
+    rule: String!
+    """
+    Last execution moment of the task
+    """
+    lastRunningAt: DateTime
+    """
+    Last execution time of the task
+    """
+    lastRunningTime: Int
+    """
+    Jobs associated with the rule
+    """
+    jobs(limit: Int! = 10, offset: Int! = 0, reverse_order: Boolean! = true): [Job!]!
+    """
+    Create time of the task
+    """
+    createdAt: DateTime!
+    """
+    Last update time of the task
+    """
+    updatedAt: DateTime!
+    """
+    Status of the task
+    """
+    status: Status!
+}

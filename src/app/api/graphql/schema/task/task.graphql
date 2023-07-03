@@ -1,0 +1,111 @@
+"""
+TaskType indicates the list of task type
+"""
+enum TaskType {
+    """
+    The type of task that execute external shell commands and log the results
+    """
+    SHELL
+    """
+    The type of task that requests an external webhook and logs the results
+    """
+    WEBHOOK
+}
+
+"""
+HTTPMethod indicates the list of HTTP methods
+"""
+enum HTTPMethod {
+    GET
+    HEAD
+    POST
+    PUT
+    PATCH
+    DELETE
+    CONNECT
+    OPTIONS
+    TRACE
+}
+
+"""
+TaskConfigurationShell is the configuration for shell type tasks
+"""
+type TaskConfigurationShell {
+    """
+    Command run in the Shell task
+    """
+    command: String!
+    """
+    Maximum time of Shell task execution
+    """
+    timeout: Int64!
+}
+
+"""
+TaskConfigurationShell is the configuration for webhook type tasks
+"""
+type TaskConfigurationWebhook {
+    """
+    URL of the Webhook task request
+    """
+    url: String!
+    """
+    HTTP methods of the Webhook task request
+    """
+    method: HTTPMethod!
+}
+
+"""
+TaskConfiguration is an aggregated type of multiple configurations
+"""
+union TaskConfiguration = TaskConfigurationShell | TaskConfigurationWebhook
+
+"""
+Definition of Task data model
+"""
+type Task implements Model {
+    """
+    Task ID
+    """
+    id: Int!
+    """
+    Task name
+    """
+    name: String!
+    """
+    Task type (SHELL, WEBHOOK)
+    """
+    type: TaskType!
+    """
+    Task configuration
+    """
+    configuration: TaskConfiguration!
+    """
+    Rules of the task
+    """
+    rules(limit: Int! = 10, offset: Int! = 0): [TaskRule!]!
+    """
+    Jobs associated with the task
+    """
+    jobs(limit: Int! = 10, offset: Int! = 0, reverse_order: Boolean! = true): [Job!]!
+    """
+    Last execution moment of the task
+    """
+    lastRunningAt: DateTime
+    """
+    Last execution time of the task
+    """
+    lastRunningTime: Int
+    """
+    Create time of the task
+    """
+    createdAt: DateTime!
+    """
+    Last update time of the task
+    """
+    updatedAt: DateTime!
+    """
+    Status of the task
+    """
+    status: Status!
+}
